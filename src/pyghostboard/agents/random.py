@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import random
 
-from pyghostboard.agents.contracts import AgentContext
+from pyghostboard.application.runner import PlayerContext
 from pyghostboard.domain.models import Action, Placement, PlayerView
 
 
 class RandomAgent:
     """Choose uniformly from every valid placement or legal action."""
 
-    def __init__(self, context: AgentContext) -> None:
+    def __init__(self, context: PlayerContext) -> None:
         self._context = context
         self._random = random.Random(context.seed)
 

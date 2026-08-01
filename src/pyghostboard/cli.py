@@ -15,12 +15,16 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from pyghostboard._platform import require_posix
-from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent, bundled_agent_command
+from pyghostboard.adapters.ai import SubprocessAgentController, bundled_agent_command
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
-from pyghostboard.agents.contracts import AgentContext, AgentProtocolError
+from pyghostboard.application.runner import (
+    MatchResult,
+    MatchRunner,
+    MatchSpec,
+    PlayerContext,
+)
 from pyghostboard.application.service import (
-    AbortReason,
     InMemoryMatchStore,
     MatchAborted,
     MatchService,
@@ -110,62 +114,78 @@ async def _play(
     recorder = MatchRecorder(record, overwrite=overwrite_record)
     store = InMemoryMatchStore()
     service = MatchService(store, logger=structlog.get_logger("pyghostboard.application"))
+    human = _HumanController()
+    agent = SubprocessAgentController(
+        command,
+        timeout=settings.agent_timeout,
+        max_message_bytes=settings.agent_max_message_bytes,
+        max_stderr_bytes=settings.agent_max_stderr_bytes,
+    )
     try:
-        human = _prompt_placement(rules, Player.ONE)
-        async with SubprocessAgent(
-            command,
-            timeout=settings.agent_timeout,
-            max_message_bytes=settings.agent_max_message_bytes,
-            max_stderr_bytes=settings.agent_max_stderr_bytes,
-        ) as agent:
-            await agent.initialize(AgentContext(seed=seed, player=Player.TWO, rules=rules))
-            match = await service.create(
-                match_id,
-                rules,
-                {Player.ONE: human, Player.TWO: await agent.choose_placement()},
-                first_player=Player.ONE,
-            )
-            recorder.append(match.started_event())
-            for _ in range(settings.max_plies):
-                if match.outcome is not None:
-                    break
-                view = match.view_for(match.current_player)
-                if not view.legal_actions:
-                    raise MatchAborted(
-                        AbortReason.NO_LEGAL_ACTIONS,
-                        f"{match.current_player.value} has no legal action",
-                    )
-                _render_view(view)
-                if match.current_player is Player.ONE:
-                    action = _prompt_action(view)
-                else:
-                    action = await agent.choose_action(view)
-                transition = await service.play(match_id, match.current_player, action)
-                recorder.append(*transition.events)
-                for event in transition.events:
-                    for visible in project_player_events(event):
-                        _render_player_event(visible)
-                match = transition.match
-            else:
-                raise MatchAborted(AbortReason.MAXIMUM_PLIES, "maximum ply count reached")
-            _render_view(match.view_for(Player.ONE))
-            assert match.outcome is not None
-            winner = match.outcome.winner.value
-            reason = match.outcome.reason.value
-            console.print(f"[bold green]Winner: {winner} ({reason})[/bold green]")
-            await agent.finish(match.view_for(Player.TWO))
+        result = await MatchRunner(service).run(
+            MatchSpec(
+                match_id=match_id,
+                rules=rules,
+                player_one_seed=seed,
+                player_two_seed=seed,
+                max_plies=settings.max_plies,
+            ),
+            {Player.ONE: human, Player.TWO: agent},
+            observer=_CliObserver(),
+            private_events=recorder,
+        )
+        _render_result(result)
         destination = recorder.finalize()
         if destination is not None:
             console.print(f"Record saved to {destination}")
-    except (AgentFailure, AgentProtocolError) as error:
-        recorder.discard()
-        raise MatchAborted(AbortReason.AGENT_FAILURE, str(error)) from error
-    except ValueError as error:
-        recorder.discard()
-        raise MatchAborted(AbortReason.ILLEGAL_ACTION, str(error)) from error
     except BaseException:
         recorder.discard()
         raise
+
+
+class _HumanController:
+    def __init__(self) -> None:
+        self._context: PlayerContext | None = None
+
+    async def initialize(self, context: PlayerContext) -> None:
+        self._context = context
+
+    async def choose_placement(self) -> Placement:
+        context = self._require_context()
+        return _prompt_placement(context.rules, context.player)
+
+    async def choose_action(self, view: PlayerView) -> Action:
+        return _prompt_action(view)
+
+    async def finish(self, view: PlayerView) -> None:
+        del view
+
+    async def close(self) -> None:
+        self._context = None
+
+    def _require_context(self) -> PlayerContext:
+        if self._context is None:
+            raise RuntimeError("human controller was not initialized")
+        return self._context
+
+
+class _CliObserver:
+    def on_turn(self, view: PlayerView) -> None:
+        _render_view(view)
+
+    def on_events(self, events: tuple[PlayerEvent, ...]) -> None:
+        for event in events:
+            _render_player_event(event)
+
+    def on_finished(self, view: PlayerView) -> None:
+        _render_view(view)
+
+
+def _render_result(result: MatchResult) -> None:
+    console.print(
+        f"[bold green]Winner: {result.outcome.winner.value} "
+        f"({result.outcome.reason.value})[/bold green]"
+    )
 
 
 @app.command()

@@ -9,7 +9,7 @@ outside the isolation boundary.
 ```text
 CUI ───────────────┐
 External app ──────┼──> Adapters ──> Application ──> Domain
-                   └──> AgentClient ──> AgentPolicy ──> PlayerView
+                   └──> PlayerController ──> AgentPolicy ──> PlayerView
 AI process <────────── JSON Lines adapter ────────────────┘
 ```
 
@@ -18,7 +18,7 @@ Dependencies point inward:
 - `domain` owns rules, immutable values, transitions, observations, snapshots, events, replay, and
   JSON codecs. It performs no infrastructure I/O.
 - `application` coordinates loading, transitions, atomic commits, and public event projection
-  through injected `MatchStore` and `EventLogger` protocols.
+  through injected ports. `MatchRunner` owns the complete-match controller lifecycle.
 - `agents` defines transport-independent policy and client protocols. Bundled random and MCTS
   policies depend only on public observations, public rules, and pure domain transitions.
 - `protocol` defines versioned AI messages using public domain values.
@@ -41,21 +41,25 @@ rules, request identity, and lifecycle state.
 The separation is structural rather than a convention: opposing live pieces in `PlayerView` have
 no kind field, and private host models cannot appear in generated AI wire Schemas.
 
-## Agent contracts
+## Match execution and agent contracts
 
-`AgentPolicy` owns synchronous placement, action, and completion decisions without knowledge of
-JSON, processes, or timeouts. `AgentClient` exposes the semantic lifecycle asynchronously to the
-trusted host. `InProcessAgentClient` runs a policy directly, while `SubprocessAgent` translates the
-same calls to versioned JSON Lines messages. One lifecycle validator enforces
-`new -> initialized -> playing -> finished -> closed` across both clients and the wire runner,
+`PlayerController` is the application-owned asynchronous input lifecycle shared by people and AI.
+`MatchRunner` initializes two controllers, collects placements, advances the persisted match,
+emits one player-safe observer stream, forwards private events only to an explicit trusted sink,
+reports the result, and closes both controllers on every exit path.
+
+`AgentPolicy` owns synchronous AI decisions without knowledge of JSON, processes, or timeouts.
+`InProcessAgentController` adapts a policy directly, while `SubprocessAgentController` translates
+the same calls to versioned JSON Lines messages. One lifecycle validator enforces
+`new -> initialized -> playing -> finished -> closed` across both controllers and the wire runner,
 including placement, player, active-turn, legal-action, and final-outcome validation.
 
-Each policy receives an `AgentContext` containing its player, public rules, and seed. The bundled
+Each controller receives a `PlayerContext` containing its player, public rules, and seed. The bundled
 MCTS policy asks the domain's live-position engine to construct hypotheses from player-safe
 observations and sampled opposing piece kinds; the AI layer neither imports nor fabricates private
 persistence models. Fixed iteration, rollout, and setup candidate limits make equal inputs and
-configuration reproducible. New decision strategies implement `AgentPolicy`; new transports
-implement `AgentClient`.
+configuration reproducible. New decision strategies implement `AgentPolicy`; input transports
+implement `PlayerController`.
 
 ## Persistence
 

@@ -154,8 +154,7 @@ branch = true
 data_file = ".pyghostboard/coverage/data"
 source = ["pyghostboard"]
 omit = [
-    "*/mcts_agent.py",
-    "*/random_agent.py",
+    "*/agent_runner.py",
 ]
 
 [tool.coverage.report]

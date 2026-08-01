@@ -1,5 +1,14 @@
 """Public application API."""
 
+from pyghostboard.application.runner import (
+    MatchObserver,
+    MatchResult,
+    MatchRunner,
+    MatchSpec,
+    PlayerContext,
+    PlayerController,
+    PrivateEventSink,
+)
 from pyghostboard.application.service import (
     AbortReason,
     EventLogger,
@@ -20,8 +29,15 @@ __all__ = [
     "InvalidCommit",
     "MatchAborted",
     "MatchNotFound",
+    "MatchObserver",
+    "MatchResult",
+    "MatchRunner",
     "MatchService",
+    "MatchSpec",
     "MatchStore",
+    "PlayerContext",
+    "PlayerController",
+    "PrivateEventSink",
     "RevisionConflict",
     "project_player_events",
 ]

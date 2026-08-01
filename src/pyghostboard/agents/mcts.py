@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from itertools import combinations
 
-from pyghostboard.agents.contracts import AgentContext
+from pyghostboard.application.runner import PlayerContext
 from pyghostboard.domain.models import (
     Action,
     GhostKind,
@@ -44,7 +44,7 @@ class _Statistics:
 class MctsAgent:
     """Search public information across sampled hidden-piece assignments."""
 
-    def __init__(self, context: AgentContext, config: SearchConfig | None = None) -> None:
+    def __init__(self, context: PlayerContext, config: SearchConfig | None = None) -> None:
         self._context = context
         self._config = config or SearchConfig()
         self._random = random.Random(context.seed)

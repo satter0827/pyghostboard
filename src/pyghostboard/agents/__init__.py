@@ -1,22 +1,18 @@
 """Public contracts and bundled decision policies."""
 
 from pyghostboard.agents.contracts import (
-    AgentClient,
-    AgentContext,
     AgentPolicy,
     AgentProtocolError,
-    InProcessAgentClient,
+    InProcessAgentController,
     PolicyFactory,
 )
 from pyghostboard.agents.mcts import MctsAgent, SearchConfig
 from pyghostboard.agents.random import RandomAgent
 
 __all__ = [
-    "AgentClient",
-    "AgentContext",
     "AgentPolicy",
     "AgentProtocolError",
-    "InProcessAgentClient",
+    "InProcessAgentController",
     "MctsAgent",
     "PolicyFactory",
     "RandomAgent",

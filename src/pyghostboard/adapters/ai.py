@@ -13,7 +13,8 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from pyghostboard._platform import require_posix
-from pyghostboard.agents.contracts import AgentContext, AgentLifecycle
+from pyghostboard.agents.contracts import AgentLifecycle
+from pyghostboard.application.runner import PlayerContext
 from pyghostboard.domain.models import Action, Placement, PlayerView
 from pyghostboard.protocol import (
     ActionRequest,
@@ -33,24 +34,22 @@ class AgentFailure(RuntimeError):
     """Raised for protocol, timeout, or process failures."""
 
 
-_BUNDLED_AGENT_MODULES = {
-    "mcts": "pyghostboard.mcts_agent",
-    "random": "pyghostboard.random_agent",
-}
+_BUNDLED_AGENTS = frozenset({"mcts", "random"})
 
 
 def bundled_agent_command(name: str | None) -> list[str]:
     """Resolve a bundled agent name to a shell-free argument vector."""
     selected = name or "mcts"
     try:
-        module = _BUNDLED_AGENT_MODULES[selected]
+        if selected not in _BUNDLED_AGENTS:
+            raise KeyError(selected)
     except KeyError as error:
-        choices = ", ".join(sorted(_BUNDLED_AGENT_MODULES))
+        choices = ", ".join(sorted(_BUNDLED_AGENTS))
         raise ValueError(f"agent must be one of: {choices}") from error
-    return [sys.executable, "-m", module]
+    return [sys.executable, "-m", "pyghostboard.agent_runner", "--policy", selected]
 
 
-class SubprocessAgent:
+class SubprocessAgentController:
     def __init__(
         self,
         command: Sequence[str],
@@ -73,7 +72,16 @@ class SubprocessAgent:
         self.stderr = bytearray()
         self._lifecycle = AgentLifecycle()
 
-    async def __aenter__(self) -> SubprocessAgent:
+    async def __aenter__(self) -> SubprocessAgentController:
+        self._lifecycle.require_open()
+        if self._process is not None:
+            raise AgentFailure("agent process is already running")
+        return self
+
+    async def __aexit__(self, *_: object) -> None:
+        await self.close()
+
+    async def _start(self) -> None:
         require_posix("AI process isolation")
         self._lifecycle.require_open()
         if self._process is not None:
@@ -88,14 +96,11 @@ class SubprocessAgent:
         )
         self.stderr.clear()
         self._stderr_task = asyncio.create_task(self._drain_stderr())
-        return self
 
-    async def __aexit__(self, *_: object) -> None:
-        await self.close()
-
-    async def initialize(self, context: AgentContext) -> None:
+    async def initialize(self, context: PlayerContext) -> None:
         async with self._request_lock:
             self._lifecycle.require_initialization()
+            await self._start()
             response = await self._request(
                 InitializeRequest(
                     request_id=uuid4(),

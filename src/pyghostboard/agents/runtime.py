@@ -6,11 +6,11 @@ from collections.abc import Iterable
 from typing import TextIO
 
 from pyghostboard.agents.contracts import (
-    AgentContext,
     AgentLifecycle,
     AgentPolicy,
     PolicyFactory,
 )
+from pyghostboard.application.runner import PlayerContext
 from pyghostboard.protocol import (
     ActionRequest,
     ActionResponse,
@@ -33,7 +33,7 @@ def run_agent(source: Iterable[bytes], destination: TextIO, factory: PolicyFacto
         response: AgentResponse
         if isinstance(request, InitializeRequest):
             lifecycle.require_initialization()
-            context = AgentContext(player=request.player, rules=request.rules, seed=request.seed)
+            context = PlayerContext(player=request.player, rules=request.rules, seed=request.seed)
             policy = factory(context)
             lifecycle.initialized(context)
             response = ReadyResponse(request_id=request.request_id)

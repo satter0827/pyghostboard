@@ -43,10 +43,11 @@ Settings reject unknown values and invalid limits before a match starts.
 
 ## AI protocol
 
-`AgentPolicy` defines synchronous setup, action, and completion methods over domain values.
-`InProcessAgentClient` executes a policy directly. `SubprocessAgent` implements the same
-asynchronous `AgentClient` lifecycle through the process-isolated protocol below. Gameplay code
-therefore does not depend on transport details.
+`PlayerController` defines the asynchronous placement, action, completion, and cleanup lifecycle
+used by `MatchRunner`. `AgentPolicy` defines synchronous AI decisions over domain values.
+`InProcessAgentController` adapts a policy directly, while `SubprocessAgentController` implements
+the same lifecycle through the process-isolated protocol below. Match execution therefore does not
+depend on whether input comes from a person, an in-process policy, or JSON Lines.
 
 An AI reads one UTF-8 JSON object per line from standard input and writes one response object per
 line to standard output. Protocol 0.1.0 follows this sequence:
@@ -63,7 +64,7 @@ oversize output, or shutdown terminates the POSIX process group.
 
 The semantic lifecycle is `new -> initialized -> playing -> finished -> closed`. Initialization,
 setup, and completion happen exactly once. Actions are accepted only while playing, on the assigned
-player's active turn. In-process clients, subprocess clients, and the JSON Lines runner share the
+player's active turn. In-process controllers, subprocess controllers, and the JSON Lines runner share the
 same validation of placements, views, legal actions, and final outcomes. Python integrations
 receive the transport-independent `AgentProtocolError` for contract violations.
 
@@ -73,8 +74,7 @@ search with validated deterministic limits. Third-party in-process policies impl
 
 The setup candidate limit bounds retained placements. Small spaces are enumerated; larger spaces
 are sampled reproducibly without materializing every combination. To add a bundled AI, implement
-its policy, provide a JSON Lines entry module, and register its public name and module once in
-`pyghostboard.adapters.ai`.
+its policy and register its public name with the single bundled-agent runner.
 
 ## Public formats
 

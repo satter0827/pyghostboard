@@ -6,13 +6,13 @@ from uuid import UUID
 import pytest
 
 from pyghostboard.agents import (
-    AgentContext,
-    InProcessAgentClient,
+    InProcessAgentController,
     MctsAgent,
     RandomAgent,
     SearchConfig,
 )
 from pyghostboard.agents.contracts import AgentProtocolError
+from pyghostboard.application import PlayerContext
 from pyghostboard.domain import (
     Escape,
     Exit,
@@ -52,7 +52,7 @@ def _active_view() -> tuple[RuleSet, PlayerView]:
 
 def test_random_agent_is_seeded_and_returns_legal_values() -> None:
     rules, view = _active_view()
-    context = AgentContext(player=Player.TWO, rules=rules, seed=17)
+    context = PlayerContext(player=Player.TWO, rules=rules, seed=17)
     first = RandomAgent(context)
     second = RandomAgent(context)
 
@@ -63,7 +63,7 @@ def test_random_agent_is_seeded_and_returns_legal_values() -> None:
 
 def test_mcts_agent_is_seeded_and_returns_a_legal_action() -> None:
     rules, view = _active_view()
-    context = AgentContext(player=Player.TWO, rules=rules, seed=23)
+    context = PlayerContext(player=Player.TWO, rules=rules, seed=23)
     config = SearchConfig(iterations=20, rollout_plies=12)
 
     first = MctsAgent(context, config)
@@ -94,7 +94,7 @@ def test_mcts_agent_takes_an_immediate_escape() -> None:
     pieces[0] = pieces[0].model_copy(update={"square": exit_square})
     match = Match.restore(snapshot.model_copy(update={"pieces": tuple(pieces)}))
     agent = MctsAgent(
-        AgentContext(player=Player.ONE, rules=rules, seed=41),
+        PlayerContext(player=Player.ONE, rules=rules, seed=41),
         SearchConfig(iterations=40, rollout_plies=16),
     )
 
@@ -147,7 +147,7 @@ def test_mcts_agent_avoids_a_known_immediate_loss() -> None:
     view = match.view_for(Player.ONE)
     assert losing_action in view.legal_actions
     agent = MctsAgent(
-        AgentContext(player=Player.ONE, rules=rules, seed=47),
+        PlayerContext(player=Player.ONE, rules=rules, seed=47),
         SearchConfig(iterations=40, rollout_plies=16),
     )
 
@@ -198,7 +198,7 @@ def test_mcts_agent_takes_an_immediate_capture_win() -> None:
     )
     winning_action = Move(source=Square(x=1, y=0), destination=Square(x=1, y=1))
     agent = MctsAgent(
-        AgentContext(player=Player.ONE, rules=rules, seed=53),
+        PlayerContext(player=Player.ONE, rules=rules, seed=53),
         SearchConfig(iterations=40, rollout_plies=16),
     )
 
@@ -234,7 +234,7 @@ def test_mcts_setup_bounds_candidates_before_enumeration(
         raise AssertionError("large placement space was enumerated")
 
     monkeypatch.setattr("pyghostboard.agents.mcts.combinations", reject_enumeration)
-    context = AgentContext(player=Player.ONE, rules=rules, seed=43)
+    context = PlayerContext(player=Player.ONE, rules=rules, seed=43)
     first = MctsAgent(context, SearchConfig(setup_candidate_limit=16))
     second = MctsAgent(context, SearchConfig(setup_candidate_limit=16))
 
@@ -253,13 +253,13 @@ def test_mcts_combination_unranking_matches_lexicographic_enumeration() -> None:
 
 
 @pytest.mark.asyncio
-async def test_in_process_client_enforces_lifecycle_and_legality() -> None:
+async def test_in_process_controller_enforces_lifecycle_and_legality() -> None:
     rules, view = _active_view()
-    client = InProcessAgentClient(RandomAgent)
+    client = InProcessAgentController(RandomAgent)
 
     with pytest.raises(AgentProtocolError, match="cannot choose a placement"):
         await client.choose_placement()
-    await client.initialize(AgentContext(player=Player.TWO, rules=rules, seed=5))
+    await client.initialize(PlayerContext(player=Player.TWO, rules=rules, seed=5))
     with pytest.raises(AgentProtocolError, match="cannot choose an action"):
         await client.choose_action(view)
     await client.choose_placement()
@@ -280,11 +280,11 @@ async def test_in_process_client_enforces_lifecycle_and_legality() -> None:
         await client.finish(final_view)
     await client.close()
     with pytest.raises(AgentProtocolError, match="while closed"):
-        await client.initialize(AgentContext(player=Player.TWO, rules=rules, seed=5))
+        await client.initialize(PlayerContext(player=Player.TWO, rules=rules, seed=5))
 
 
 @pytest.mark.asyncio
-async def test_in_process_client_rejects_invalid_policy_outputs() -> None:
+async def test_in_process_controller_rejects_invalid_policy_outputs() -> None:
     rules, view = _active_view()
     starts = rules.start_squares(Player.TWO)
 
@@ -292,8 +292,8 @@ async def test_in_process_client_rejects_invalid_policy_outputs() -> None:
         def choose_placement(self) -> Placement:
             return Placement(good=starts[:1], bad=starts[1:])
 
-    placement_client = InProcessAgentClient(InvalidPlacementAgent)
-    await placement_client.initialize(AgentContext(player=Player.TWO, rules=rules, seed=5))
+    placement_client = InProcessAgentController(InvalidPlacementAgent)
+    await placement_client.initialize(PlayerContext(player=Player.TWO, rules=rules, seed=5))
     with pytest.raises(AgentProtocolError, match="piece counts"):
         await placement_client.choose_placement()
 
@@ -302,8 +302,8 @@ async def test_in_process_client_rejects_invalid_policy_outputs() -> None:
             del view
             return Move(source=Square(x=0, y=0), destination=Square(x=0, y=1))
 
-    action_client = InProcessAgentClient(InvalidActionAgent)
-    await action_client.initialize(AgentContext(player=Player.TWO, rules=rules, seed=5))
+    action_client = InProcessAgentController(InvalidActionAgent)
+    await action_client.initialize(PlayerContext(player=Player.TWO, rules=rules, seed=5))
     await action_client.choose_placement()
     with pytest.raises(AgentProtocolError, match="illegal action"):
         await action_client.choose_action(view)
@@ -312,7 +312,7 @@ async def test_in_process_client_rejects_invalid_policy_outputs() -> None:
         def choose_placement(self) -> Placement:
             return Placement(good=starts[:4], bad=(*starts[4:7], Square(x=0, y=0)))
 
-    outside_client = InProcessAgentClient(OutsidePlacementAgent)
-    await outside_client.initialize(AgentContext(player=Player.TWO, rules=rules, seed=5))
+    outside_client = InProcessAgentController(OutsidePlacementAgent)
+    await outside_client.initialize(PlayerContext(player=Player.TWO, rules=rules, seed=5))
     with pytest.raises(AgentProtocolError, match="outside its starting area"):
         await outside_client.choose_placement()

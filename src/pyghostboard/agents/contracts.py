@@ -6,15 +6,8 @@ from collections.abc import Callable
 from enum import StrEnum
 from typing import Protocol
 
-from pyghostboard.domain.models import Action, DomainModel, Placement, Player, PlayerView, RuleSet
-
-
-class AgentContext(DomainModel):
-    """Public, reproducible information supplied when an agent starts."""
-
-    player: Player
-    rules: RuleSet
-    seed: int
+from pyghostboard.application.runner import PlayerContext
+from pyghostboard.domain.models import Action, Placement, PlayerView
 
 
 class AgentPolicy(Protocol):
@@ -27,21 +20,7 @@ class AgentPolicy(Protocol):
     def on_finished(self, view: PlayerView) -> None: ...
 
 
-PolicyFactory = Callable[[AgentContext], AgentPolicy]
-
-
-class AgentClient(Protocol):
-    """Asynchronous semantic contract used by a trusted game host."""
-
-    async def initialize(self, context: AgentContext) -> None: ...
-
-    async def choose_placement(self) -> Placement: ...
-
-    async def choose_action(self, view: PlayerView) -> Action: ...
-
-    async def finish(self, view: PlayerView) -> None: ...
-
-    async def close(self) -> None: ...
+PolicyFactory = Callable[[PlayerContext], AgentPolicy]
 
 
 class AgentProtocolError(RuntimeError):
@@ -63,7 +42,7 @@ class AgentLifecycle:
 
     def __init__(self) -> None:
         self._phase = AgentPhase.NEW
-        self._context: AgentContext | None = None
+        self._context: PlayerContext | None = None
 
     @property
     def phase(self) -> AgentPhase:
@@ -72,7 +51,7 @@ class AgentLifecycle:
     def require_initialization(self) -> None:
         self._require(AgentPhase.NEW, "agent cannot be initialized")
 
-    def initialized(self, context: AgentContext) -> None:
+    def initialized(self, context: PlayerContext) -> None:
         self.require_initialization()
         self._context = context
         self._phase = AgentPhase.INITIALIZED
@@ -128,13 +107,13 @@ class AgentLifecycle:
         if self._phase is not expected:
             raise AgentProtocolError(f"{message} while {self._phase.value}")
 
-    def _require_context(self) -> AgentContext:
+    def _require_context(self) -> PlayerContext:
         if self._context is None:  # pragma: no cover - protected by phase checks
             raise AgentProtocolError("agent has no context")
         return self._context
 
 
-class InProcessAgentClient:
+class InProcessAgentController:
     """Run a policy without transport, primarily for embedding and tests."""
 
     def __init__(self, factory: PolicyFactory) -> None:
@@ -142,7 +121,7 @@ class InProcessAgentClient:
         self._policy: AgentPolicy | None = None
         self._lifecycle = AgentLifecycle()
 
-    async def initialize(self, context: AgentContext) -> None:
+    async def initialize(self, context: PlayerContext) -> None:
         self._lifecycle.require_initialization()
         policy = self._factory(context)
         self._lifecycle.initialized(context)
