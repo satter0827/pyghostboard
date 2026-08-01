@@ -16,7 +16,11 @@ htmlcov/
 # Editors and operating systems
 .DS_Store
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
 
 # Local configuration
 .env

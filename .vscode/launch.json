@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "App: Play",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pyghostboard.cli",
+      "args": [
+        "play",
+        "--seed",
+        "7"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "preLaunchTask": "Environment: Sync"
+    },
+    {
+      "name": "Tests: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "preLaunchTask": "Environment: Sync"
+    }
+  ]
+}
