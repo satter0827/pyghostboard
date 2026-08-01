@@ -4,9 +4,9 @@ import subprocess
 import sys
 import tarfile
 import zipfile
+from email.parser import BytesParser
 from pathlib import Path
 
-import pyghostboard
 from pyghostboard.schemas import SCHEMA_NAMES
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -37,10 +37,10 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
     wheel = next(tmp_path.glob("pyghostboard-*.whl"))
     source_distribution = next(tmp_path.glob("pyghostboard-*.tar.gz"))
 
-    assert pyghostboard.__version__ in wheel.name
-
     with zipfile.ZipFile(wheel) as archive:
         wheel_files = set(archive.namelist())
+        metadata_name = next(name for name in wheel_files if name.endswith(".dist-info/METADATA"))
+        wheel_version = BytesParser().parsebytes(archive.read(metadata_name))["Version"]
 
     assert "pyghostboard/__init__.py" in wheel_files
     assert "pyghostboard/py.typed" in wheel_files
@@ -49,10 +49,20 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
 
     with tarfile.open(source_distribution, mode="r:gz") as archive:
         source_files: set[str] = set()
+        source_version: str | None = None
         for name in archive.getnames():
             path = Path(name)
             if len(path.parts) > 1:
                 source_files.add(Path(*path.parts[1:]).as_posix())
+            if name.endswith("/PKG-INFO"):
+                extracted = archive.extractfile(name)
+                assert extracted is not None
+                source_version = BytesParser().parsebytes(extracted.read())["Version"]
+
+    assert wheel_version is not None
+    assert source_version == wheel_version
+    assert wheel.name == f"pyghostboard-{wheel_version}-py3-none-any.whl"
+    assert source_distribution.name == f"pyghostboard-{wheel_version}.tar.gz"
 
     assert {
         "CHANGELOG.md",
