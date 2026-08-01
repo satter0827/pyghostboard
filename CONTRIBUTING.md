@@ -23,7 +23,9 @@ Use **Tasks: Run Task** for the shared workflows:
 - `Test: All` runs the complete test suite.
 
 The workspace uses `.venv` and enables pytest discovery, Ruff formatting, and Ruff fixes for Python
-files. These settings do not change non-Python files on save.
+files. Development-tool caches and coverage data stay under `.pyghostboard`; deleting that
+directory resets local generated state without removing the virtual environment. These settings do
+not change non-Python files on save.
 
 ## Branches and worktrees
 

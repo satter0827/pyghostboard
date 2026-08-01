@@ -21,6 +21,9 @@ from tools.verify_distribution import verify_distribution  # noqa: E402
 
 PYPROJECT: Final = ROOT / "pyproject.toml"
 CHANGELOG: Final = ROOT / "CHANGELOG.md"
+LOCAL_STATE_ROOT: Final = ROOT / ".pyghostboard"
+CACHE_ROOT: Final = LOCAL_STATE_ROOT / "cache"
+COVERAGE_ROOT: Final = LOCAL_STATE_ROOT / "coverage"
 BUILD_COMMIT_ENV: Final = "PYGHOSTBOARD_BUILD_COMMIT"
 VERSION_ENV: Final = "SETUPTOOLS_SCM_PRETEND_VERSION"
 RELEASE_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
@@ -100,7 +103,13 @@ def check_quality() -> None:
         ["uv", "run", "ruff", "format", "--check", "."],
         ["uv", "run", "ruff", "check", "."],
         ["uv", "run", "mypy"],
-        ["uv", "run", "lint-imports"],
+        [
+            "uv",
+            "run",
+            "lint-imports",
+            "--cache-dir",
+            str(CACHE_ROOT / "import-linter"),
+        ],
         ["uv", "run", "pytest", "tests/structure"],
         ["uv", "run", "python", "tools/generate_schemas.py", "--check"],
     ]
@@ -113,6 +122,7 @@ def check_unit() -> None:
 
 
 def check_integration() -> None:
+    COVERAGE_ROOT.mkdir(parents=True, exist_ok=True)
     run(["uv", "run", "coverage", "erase"])
     run(["uv", "run", "coverage", "run", "-m", "pytest", "tests/unit"])
     run(
