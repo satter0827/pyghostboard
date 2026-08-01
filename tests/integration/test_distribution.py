@@ -46,4 +46,16 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
     with tarfile.open(source_distribution, mode="r:gz") as archive:
         source_files = {Path(name).name for name in archive.getnames()}
 
-    assert {"CHANGELOG.md", "LICENSE", "README.md", "pyproject.toml"} <= source_files
+    assert {
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "README.ja.md",
+        "README.md",
+        "SECURITY.md",
+        "ai-protocol.md",
+        "architecture.md",
+        "integration.md",
+        "pyproject.toml",
+        "rules.toml",
+    } <= source_files

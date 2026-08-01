@@ -19,7 +19,7 @@ from pyghostboard.protocol import PROTOCOL_VERSION, AgentRequest, AgentResponse
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "src" / "pyghostboard" / "schemas"
 SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
-SCHEMA_BASE = "https://pyghostboard.dev/schemas"
+SCHEMA_BASE = "https://raw.githubusercontent.com/satter0827/pyghostboard"
 
 
 def main() -> None:
@@ -53,7 +53,7 @@ def main() -> None:
     for filename, (version, schema) in schemas.items():
         document = {
             "$schema": SCHEMA_DIALECT,
-            "$id": f"{SCHEMA_BASE}/{version}/{filename}",
+            "$id": f"{SCHEMA_BASE}/v{version}/src/pyghostboard/schemas/{filename}",
             **schema,
         }
         (OUTPUT / filename).write_text(

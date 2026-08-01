@@ -13,6 +13,7 @@ from typing import Annotated, Literal
 from pydantic import Field, TypeAdapter
 
 from pyghostboard._build_info import BUILD_COMMIT
+from pyghostboard._platform import require_posix
 from pyghostboard.domain.codec import dump_event
 from pyghostboard.domain.match import Match
 from pyghostboard.domain.models import (
@@ -46,10 +47,13 @@ class MatchRecorder:
         self,
         destination: Path | None,
         *,
+        overwrite: bool = False,
         package_version: str | None = None,
         main_commit_sha: str | None = None,
     ) -> None:
+        require_posix("private match recording")
         self._destination = destination
+        self._overwrite = overwrite
         header = RecordHeader(
             package_version=package_version or version("pyghostboard"),
             main_commit_sha=main_commit_sha or _source_commit(),
@@ -82,7 +86,15 @@ class MatchRecorder:
         if self._destination is None:
             self._temporary.unlink(missing_ok=True)
             return None
-        os.replace(self._temporary, self._destination)
+        if self._overwrite:
+            os.replace(self._temporary, self._destination)
+        else:
+            try:
+                os.link(self._temporary, self._destination)
+            except FileExistsError:
+                self._temporary.unlink(missing_ok=True)
+                raise
+            self._temporary.unlink()
         return self._destination
 
     def discard(self) -> None:

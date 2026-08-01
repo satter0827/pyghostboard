@@ -39,6 +39,10 @@ through GitHub; automated agents do not merge pull requests to `main`. Do not me
 `develop` after a release. Main pull-request checks validate GitHub's test merge against the current
 main revision.
 
+After main push CI succeeds, a maintainer may tag that exact commit with `vX.Y.Z`. The tag workflow
+builds and verifies wheel and source archives and retains them as Actions artifacts. This repository
+does not publish distributions to PyPI, TestPyPI, or another package registry.
+
 ## Verification
 
 Run the fast checks while implementing:

@@ -32,12 +32,13 @@ The following depend on deployment or human judgment and cannot be proven by rep
   event append one atomic transaction.
 - Public names and error wording require an API usability review; passing an import test alone does
   not make a name clear or stable.
-- GitHub must enforce protected `develop` and `main` branches, required checks, human review, and
-  protected TestPyPI/PyPI environments with OIDC Trusted Publishing.
+- GitHub must enforce protected `develop` and `main` branches, required checks, and human review.
 - Short-lived branches target `develop` and are squash-merged. Only `develop` opens a release pull
   request to `main`; automation must not bypass the human review gate.
 - A release tag is created only after the main push CI succeeds. The tag must identify the current
-  main commit, and the release workflow injects that complete commit SHA into distributions.
+  main commit, and the release workflow injects that complete commit SHA into distributions. It
+  stores verified wheel and source archives as Actions artifacts and does not publish them to a
+  package registry.
 
 When one of these constraints is relevant, state how it was reviewed in the pull request rather
 than claiming it was covered by an automated test.

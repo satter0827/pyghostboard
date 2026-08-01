@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
 
+from pyghostboard._platform import require_posix
 from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
@@ -72,9 +73,14 @@ def play(
         list[str] | None,
         typer.Option("--ai", help="AI executable and arguments; repeat for each argument."),
     ] = None,
+    overwrite_record: Annotated[
+        bool,
+        typer.Option("--overwrite-record", help="Replace an existing record destination."),
+    ] = False,
 ) -> None:
     """Play as player one against an isolated AI process."""
     try:
+        require_posix("command-line interface")
         settings = RuntimeSettings()
         _configure_logging(settings.log_level)
         rules = RuleSet.standard() if config is None else load_rules(config)
@@ -85,7 +91,7 @@ def play(
             "--seed",
             str(seed),
         ]
-        asyncio.run(_play(rules, record, seed, command, settings))
+        asyncio.run(_play(rules, record, seed, command, settings, overwrite_record))
     except MatchAborted as error:
         structlog.get_logger("pyghostboard.cli").warning(
             "match_aborted", reason=error.reason.value, detail=str(error)
@@ -103,9 +109,10 @@ async def _play(
     seed: int,
     command: list[str],
     settings: RuntimeSettings,
+    overwrite_record: bool = False,
 ) -> None:
     match_id = uuid4()
-    recorder = MatchRecorder(record)
+    recorder = MatchRecorder(record, overwrite=overwrite_record)
     store = InMemoryMatchStore()
     service = MatchService(store, logger=structlog.get_logger("pyghostboard.application"))
     try:
@@ -162,7 +169,10 @@ async def _play(
             reason = match.outcome.reason.value
             console.print(f"[bold green]Winner: {winner} ({reason})[/bold green]")
             if not isinstance(
-                await agent.request(FinishedRequest(request_id=uuid4())), ReadyResponse
+                await agent.request(
+                    FinishedRequest(request_id=uuid4(), view=match.view_for(Player.TWO))
+                ),
+                ReadyResponse,
             ):
                 raise AgentFailure("agent did not acknowledge match completion")
         destination = recorder.finalize()
@@ -183,8 +193,9 @@ async def _play(
 def replay(record: Annotated[Path, typer.Argument(exists=True, dir_okay=False)]) -> None:
     """Validate and replay a private JSON Lines record."""
     try:
+        require_posix("command-line interface")
         match_record = read_record(record)
-    except ValueError as error:
+    except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error
     try:
         events = match_record.events
@@ -205,6 +216,7 @@ def replay(record: Annotated[Path, typer.Argument(exists=True, dir_okay=False)])
 def validate_rules(path: Annotated[Path, typer.Argument(exists=True, dir_okay=False)]) -> None:
     """Validate a TOML RuleSet."""
     try:
+        require_posix("command-line interface")
         rules = load_rules(path)
     except (OSError, ValueError) as error:
         raise typer.BadParameter(str(error)) from error

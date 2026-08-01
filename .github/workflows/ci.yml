@@ -96,13 +96,23 @@ jobs:
 
   compatibility-matrix:
     if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main'
-    name: Compatibility / Python ${{ matrix.python-version }}
-    runs-on: ubuntu-24.04
+    name: Compatibility / ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: ubuntu-24.04
+            python-version: "3.11"
+          - os: ubuntu-24.04
+            python-version: "3.12"
+          - os: ubuntu-24.04
+            python-version: "3.13"
+          - os: ubuntu-24.04
+            python-version: "3.14"
+          - os: macos-15
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -129,14 +139,44 @@ jobs:
           "$python" -c \
             "from pyghostboard.adapters.recording import MatchRecorder; recorder = MatchRecorder(None); recorder.discard()"
 
+  domain-compatibility-windows:
+    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    name: Compatibility / windows-2025 / Python 3.13 / Domain
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      - run: uv sync --locked --group dev
+      - run: >-
+          uv run pytest
+          tests/unit/test_domain.py
+          tests/unit/test_domain_validation.py
+          tests/unit/test_application.py
+          tests/unit/test_package.py
+          tests/structure
+      - run: uv run python tools/write_build_info.py "$env:GITHUB_SHA"
+      - run: uv build --clear
+      - run: uv venv --python 3.13 "$env:RUNNER_TEMP\domain-venv"
+      - run: uv pip install --python "$env:RUNNER_TEMP\domain-venv\Scripts\python.exe" (Get-ChildItem dist\*.whl)
+      - name: Smoke test installed domain wheel
+        run: >-
+          & "$env:RUNNER_TEMP\domain-venv\Scripts\python.exe" -c
+          "from pyghostboard.domain import Match, RuleSet; from pyghostboard.application import MatchService; print(Match, RuleSet.standard(), MatchService)"
+
   compatibility:
     if: always() && (github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main')
     name: Compatibility
-    needs: compatibility-matrix
+    needs: [compatibility-matrix, domain-compatibility-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - run: test "${{ needs.compatibility-matrix.result }}" = "success"
+      - run: |
+          test "${{ needs.compatibility-matrix.result }}" = "success"
+          test "${{ needs.domain-compatibility-windows.result }}" = "success"
 
   main-source:
     if: github.event_name == 'pull_request' && github.base_ref == 'main'

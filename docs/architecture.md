@@ -23,6 +23,11 @@ AI process <── JSON Lines protocol ─────────────�
 - `cli` renders application results and never evaluates game rules.
 - `protocol` defines versioned messages and depends only on public domain values.
 
+The domain API supports Python 3.11 through 3.14 on Windows, macOS, and Linux. The CUI, AI process
+adapter, and private recorder formally support macOS and Linux. They reject Windows at their
+infrastructure boundary because process-group cleanup and atomic no-replace promotion rely on
+POSIX behavior.
+
 Import Linter enforces these directions. Internal modules import definitions directly rather than
 the package-root convenience facade. Executable repository-level constraints also live in
 `tests/structure`; review-only constraints for coding agents are recorded in the root `AGENTS.md`.
@@ -49,13 +54,17 @@ events. Storage implementations remain outside the domain.
 
 Private JSON Lines records begin with a `record_header` containing the record format version,
 distribution version, and complete main commit SHA. Subsequent lines are private match events. The
-temporary file has mode `0600` and is created beside an explicit destination so final promotion is
-an atomic same-filesystem replacement.
+temporary file has mode `0600` and is created beside an explicit destination. Promotion is atomic
+on the same filesystem and refuses to replace an existing path by default. Explicit overwrite uses
+atomic replacement.
 
 Public JSON formats use UTF-8, Semantic Versioning, and bundled JSON Schema Draft 2020-12 schemas.
 Domain events contain no timestamps so seeded executions remain reproducible.
 Diagnostic logs use RFC 3339 UTC timestamps, but only public event projections are logged; complete
 snapshots and placements are never passed to a logger.
+
+The `finished` AI request carries the final `PlayerView` for that AI. This reports the outcome
+without introducing a private model into the wire protocol.
 
 ## Change policy
 

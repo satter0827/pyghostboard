@@ -99,10 +99,14 @@
           "default": "finished",
           "title": "Type",
           "type": "string"
+        },
+        "view": {
+          "$ref": "#/$defs/PlayerView"
         }
       },
       "required": [
-        "request_id"
+        "request_id",
+        "view"
       ],
       "title": "FinishedRequest",
       "type": "object"
@@ -495,7 +499,7 @@
       "type": "object"
     }
   },
-  "$id": "https://pyghostboard.dev/schemas/0.1.0/agent-request-0.1.0.schema.json",
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/agent-request-0.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "discriminator": {
     "mapping": {

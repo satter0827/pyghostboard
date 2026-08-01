@@ -38,6 +38,7 @@ class FinishedRequest(DomainModel):
     type: Literal["finished"] = "finished"
     protocol_version: Literal["0.1.0"] = "0.1.0"
     request_id: UUID
+    view: PlayerView
 
 
 AgentRequest = Annotated[

@@ -1,24 +1,40 @@
 # pyghostboard
 
 [![CI](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml/badge.svg)](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/satter0827/pyghostboard/blob/main/LICENSE)
 
 pyghostboard is a typed Geister game domain with persistence-friendly APIs, an isolated AI
 protocol, and a rich command-line interface.
 
-[日本語版 README](README.ja.md)
+[日本語版 README](https://github.com/satter0827/pyghostboard/blob/main/README.ja.md)
 
 ## Install and play
 
-Python 3.11 through 3.14 is supported.
+Python 3.11 through 3.14 is supported. The domain API is portable Python. The CUI, isolated AI
+process, and private recorder require macOS or Linux because their cleanup and file-promotion
+guarantees use POSIX behavior.
 
 ```shell
-pip install pyghostboard
+git clone https://github.com/satter0827/pyghostboard.git
+cd pyghostboard
+python -m pip install .
 pyghostboard play --seed 7
 ```
 
+The project prepares standard wheel and source archives but does not publish them to a package
+registry. A `vX.Y.Z` tag on the current `main` commit builds an exact-version artifact in GitHub
+Actions.
+
 The bundled random AI runs in a separate process and receives only the information visible to its
-player. Use `pyghostboard --help` for custom AI, recording, replay, and rule validation options.
+player. Use `pyghostboard --help` for recording, replay, and rule validation options. External AI
+commands are passed as repeated arguments without a shell, for example:
+
+```shell
+pyghostboard play --ai python --ai /path/to/agent.py
+```
+
+Private records contain both players' ghost kinds and placements. Protect them as secrets. Existing
+record destinations are not replaced unless `--overwrite-record` is explicitly supplied.
 
 ## Use the domain
 
@@ -47,9 +63,9 @@ Trusted applications can persist `PrivateMatchSnapshot` values directly or use t
 format. `RuleSet` customization is data-only: board dimensions, starting areas, exits, shared
 movement vectors, piece counts, and a subset of the three built-in victory conditions.
 
-Runtime limits are externally configurable with the `PYGHOSTBOARD_` prefix. For example,
-`PYGHOSTBOARD_AGENT_TIMEOUT=5` changes the AI response deadline. Message size, retained stderr,
-maximum ply count, and log level have corresponding settings in `RuntimeSettings`.
+Runtime limits are externally configurable with the `PYGHOSTBOARD_` prefix. The available names
+are `LOG_LEVEL`, `AGENT_TIMEOUT`, `AGENT_MAX_MESSAGE_BYTES`, `AGENT_MAX_STDERR_BYTES`, and
+`MAX_PLIES`. For example, `PYGHOSTBOARD_AGENT_TIMEOUT=5` changes the AI response deadline.
 
 ## Development
 
@@ -60,8 +76,11 @@ uv sync --locked --group dev
 uv run pytest
 ```
 
-See [Architecture](docs/architecture.md) for trust and dependency boundaries and
-[Contributing](CONTRIBUTING.md) for the complete verification and branch workflow.
+See [Architecture](https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md),
+[AI protocol](https://github.com/satter0827/pyghostboard/blob/main/docs/ai-protocol.md), and
+[integration guide](https://github.com/satter0827/pyghostboard/blob/main/docs/integration.md).
+[Contributing](https://github.com/satter0827/pyghostboard/blob/main/CONTRIBUTING.md) describes the
+complete verification and branch workflow.
 
 ## Release scope
 
@@ -73,4 +92,4 @@ This is an unofficial implementation. It does not include commercial artwork or 
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [MIT License](https://github.com/satter0827/pyghostboard/blob/main/LICENSE).

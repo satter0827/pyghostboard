@@ -65,8 +65,10 @@ def run(source: Iterable[bytes], destination: TextIO, seed: int) -> None:
                 action=randomizer.choice(request.view.legal_actions),
             )
         elif isinstance(request, FinishedRequest):
-            if not initialized:
-                raise RuntimeError("agent was not initialized")
+            if player is None or request.view.player is not player:
+                raise RuntimeError("agent received a finished request for the wrong player")
+            if request.view.outcome is None:
+                raise RuntimeError("agent received a finished request before match completion")
             response = ReadyResponse(request_id=request.request_id)
         else:  # pragma: no cover - exhaustive union defense
             raise RuntimeError("unsupported request")

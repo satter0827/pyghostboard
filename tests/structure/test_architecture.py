@@ -17,13 +17,20 @@ PUBLIC_FACADES = {"pyghostboard.application", "pyghostboard.domain"}
 DOMAIN_FORBIDDEN_IMPORTS = {
     "asyncio",
     "logging",
+    "datetime",
+    "http",
     "os",
     "pathlib",
     "pydantic_settings",
     "rich",
+    "socket",
+    "sqlite3",
     "structlog",
     "subprocess",
+    "sys",
+    "time",
     "typer",
+    "urllib",
 }
 
 
@@ -142,6 +149,35 @@ def test_domain_has_no_io_process_configuration_or_logging_imports() -> None:
         for imported in _imports(path):
             if imported.split(".", maxsplit=1)[0] in DOMAIN_FORBIDDEN_IMPORTS:
                 violations.append(f"{module} -> {imported}")
+    assert violations == []
+
+
+def test_domain_does_not_call_builtin_io_or_emit_output() -> None:
+    forbidden_calls = {"input", "open", "print"}
+    violations: list[str] = []
+    for module, path in _modules().items():
+        if not module.startswith("pyghostboard.domain"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id in forbidden_calls
+            ):
+                violations.append(f"{module}:{node.lineno} calls {node.func.id}")
+    assert violations == []
+
+
+def test_platform_policy_is_only_imported_by_outer_infrastructure() -> None:
+    violations: list[str] = []
+    for module, path in _modules().items():
+        protected = (
+            module.startswith(("pyghostboard.domain", "pyghostboard.application"))
+            or module == "pyghostboard.protocol"
+        )
+        if protected and any(imported == "pyghostboard._platform" for imported in _imports(path)):
+            violations.append(module)
     assert violations == []
 
 

@@ -12,6 +12,7 @@ from pyghostboard.cli import _play, app
 from pyghostboard.domain import Placement, Player, RuleSet
 
 runner = CliRunner()
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_cli_help_is_available() -> None:
@@ -19,6 +20,13 @@ def test_cli_help_is_available() -> None:
     assert result.exit_code == 0
     assert "play" in result.stdout
     assert "replay" in result.stdout
+
+
+def test_bundled_rule_example_is_valid() -> None:
+    result = runner.invoke(app, ["rules", "validate", str(REPOSITORY_ROOT / "examples/rules.toml")])
+
+    assert result.exit_code == 0
+    assert "Valid rules: 6x6" in result.stdout
 
 
 @pytest.mark.asyncio

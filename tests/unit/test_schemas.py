@@ -17,7 +17,10 @@ def test_all_public_schemas_use_draft_2020_12_and_versioned_ids() -> None:
     for name in SCHEMA_NAMES:
         schema = json.loads(read_schema(name))
         assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-        assert schema["$id"].endswith(f"/0.1.0/{name}")
+        assert schema["$id"] == (
+            "https://raw.githubusercontent.com/satter0827/pyghostboard/"
+            f"v0.1.0/src/pyghostboard/schemas/{name}"
+        )
         assert "$defs" in schema
 
 

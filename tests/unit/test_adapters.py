@@ -10,7 +10,7 @@ import pytest
 
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
-from pyghostboard.domain import Match, Placement, Player, RuleSet
+from pyghostboard.domain import GameOutcome, Match, OutcomeReason, Placement, Player, RuleSet
 from pyghostboard.protocol import (
     ActionRequest,
     FinishedRequest,
@@ -87,6 +87,33 @@ def test_private_recorder_promotes_or_discards_atomically(tmp_path: Path) -> Non
     assert discarded.finalize() is None
 
 
+def test_private_recorder_refuses_overwrite_by_default(tmp_path: Path) -> None:
+    destination = tmp_path / "match.jsonl"
+    destination.write_text("existing", encoding="utf-8")
+    recorder = MatchRecorder(destination, package_version="0.1.0", main_commit_sha=COMMIT_SHA)
+
+    with pytest.raises(FileExistsError):
+        recorder.finalize()
+
+    assert destination.read_text(encoding="utf-8") == "existing"
+
+
+def test_private_recorder_can_explicitly_overwrite(tmp_path: Path) -> None:
+    destination = tmp_path / "match.jsonl"
+    destination.write_text("existing", encoding="utf-8")
+    match = _match()
+    recorder = MatchRecorder(
+        destination,
+        overwrite=True,
+        package_version="0.1.0",
+        main_commit_sha=COMMIT_SHA,
+    )
+    recorder.append(match.started_event())
+
+    assert recorder.finalize() == destination
+    assert read_record(destination).events == (match.started_event(),)
+
+
 def test_recorder_explicit_discard(tmp_path: Path) -> None:
     recorder = MatchRecorder(
         tmp_path / "unused.jsonl",
@@ -113,7 +140,17 @@ def test_random_agent_handles_complete_protocol_sequence() -> None:
             request_id=UUID("00000000-0000-0000-0000-000000000023"),
             view=ai_match.view_for(Player.TWO),
         ),
-        FinishedRequest(request_id=UUID("00000000-0000-0000-0000-000000000024")),
+        FinishedRequest(
+            request_id=UUID("00000000-0000-0000-0000-000000000024"),
+            view=ai_match.view_for(Player.TWO).model_copy(
+                update={
+                    "outcome": GameOutcome(
+                        winner=Player.ONE,
+                        reason=OutcomeReason.CAPTURE_GOOD,
+                    )
+                }
+            ),
+        ),
     )
     source = [request_adapter.dump_json(request) + b"\n" for request in requests]
     destination = StringIO()

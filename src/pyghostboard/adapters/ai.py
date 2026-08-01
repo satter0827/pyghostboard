@@ -10,6 +10,7 @@ from contextlib import suppress
 
 from pydantic import ValidationError
 
+from pyghostboard._platform import require_posix
 from pyghostboard.protocol import AgentRequest, AgentResponse, response_adapter
 
 
@@ -40,6 +41,7 @@ class SubprocessAgent:
         self.stderr = bytearray()
 
     async def __aenter__(self) -> SubprocessAgent:
+        require_posix("AI process isolation")
         if self._process is not None:
             raise AgentFailure("agent process is already running")
         self._process = await asyncio.create_subprocess_exec(
