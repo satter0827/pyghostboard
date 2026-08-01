@@ -15,10 +15,10 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from pyghostboard._platform import require_posix
-from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent
+from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent, bundled_agent_command
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
-from pyghostboard.agents.contracts import AgentContext
+from pyghostboard.agents.contracts import AgentContext, AgentProtocolError
 from pyghostboard.application.service import (
     AbortReason,
     InMemoryMatchStore,
@@ -85,11 +85,7 @@ def play(
         rules = RuleSet.standard() if config is None else load_rules(config)
         if ai_command is not None and agent is not None:
             raise ValueError("--agent and --ai-command cannot be combined")
-        modules = {"mcts": "pyghostboard.mcts_agent", "random": "pyghostboard.random_agent"}
-        selected_agent = agent or "mcts"
-        if selected_agent not in modules:
-            raise ValueError("agent must be 'mcts' or 'random'")
-        command = ai_command or [sys.executable, "-m", modules[selected_agent]]
+        command = ai_command or bundled_agent_command(agent)
         asyncio.run(_play(rules, record, seed, command, settings, overwrite_record))
     except MatchAborted as error:
         structlog.get_logger("pyghostboard.cli").warning(
@@ -161,7 +157,7 @@ async def _play(
         destination = recorder.finalize()
         if destination is not None:
             console.print(f"Record saved to {destination}")
-    except AgentFailure as error:
+    except (AgentFailure, AgentProtocolError) as error:
         recorder.discard()
         raise MatchAborted(AbortReason.AGENT_FAILURE, str(error)) from error
     except ValueError as error:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import signal
+import sys
 from collections.abc import Sequence
 from contextlib import suppress
 from uuid import uuid4
@@ -12,7 +13,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from pyghostboard._platform import require_posix
-from pyghostboard.agents.contracts import AgentContext
+from pyghostboard.agents.contracts import AgentContext, AgentLifecycle
 from pyghostboard.domain.models import Action, Placement, PlayerView
 from pyghostboard.protocol import (
     ActionRequest,
@@ -30,6 +31,23 @@ from pyghostboard.protocol import (
 
 class AgentFailure(RuntimeError):
     """Raised for protocol, timeout, or process failures."""
+
+
+_BUNDLED_AGENT_MODULES = {
+    "mcts": "pyghostboard.mcts_agent",
+    "random": "pyghostboard.random_agent",
+}
+
+
+def bundled_agent_command(name: str | None) -> list[str]:
+    """Resolve a bundled agent name to a shell-free argument vector."""
+    selected = name or "mcts"
+    try:
+        module = _BUNDLED_AGENT_MODULES[selected]
+    except KeyError as error:
+        choices = ", ".join(sorted(_BUNDLED_AGENT_MODULES))
+        raise ValueError(f"agent must be one of: {choices}") from error
+    return [sys.executable, "-m", module]
 
 
 class SubprocessAgent:
@@ -53,10 +71,11 @@ class SubprocessAgent:
         self._stderr_task: asyncio.Task[None] | None = None
         self._request_lock = asyncio.Lock()
         self.stderr = bytearray()
-        self._initialized = False
+        self._lifecycle = AgentLifecycle()
 
     async def __aenter__(self) -> SubprocessAgent:
         require_posix("AI process isolation")
+        self._lifecycle.require_open()
         if self._process is not None:
             raise AgentFailure("agent process is already running")
         self._process = await asyncio.create_subprocess_exec(
@@ -75,47 +94,45 @@ class SubprocessAgent:
         await self.close()
 
     async def initialize(self, context: AgentContext) -> None:
-        if self._initialized:
-            raise AgentFailure("agent was already initialized")
-        response = await self._request_serialized(
-            InitializeRequest(
-                request_id=uuid4(),
-                seed=context.seed,
-                player=context.player,
-                rules=context.rules,
+        async with self._request_lock:
+            self._lifecycle.require_initialization()
+            response = await self._request(
+                InitializeRequest(
+                    request_id=uuid4(),
+                    seed=context.seed,
+                    player=context.player,
+                    rules=context.rules,
+                )
             )
-        )
-        if not isinstance(response, ReadyResponse):
-            raise AgentFailure("agent did not acknowledge initialization")
-        self._initialized = True
+            if not isinstance(response, ReadyResponse):
+                raise AgentFailure("agent did not acknowledge initialization")
+            self._lifecycle.initialized(context)
 
     async def choose_placement(self) -> Placement:
-        self._require_initialized()
-        response = await self._request_serialized(SetupRequest(request_id=uuid4()))
-        if not isinstance(response, SetupResponse):
-            raise AgentFailure("agent did not return a placement")
-        return response.placement
+        async with self._request_lock:
+            self._lifecycle.require_placement()
+            response = await self._request(SetupRequest(request_id=uuid4()))
+            if not isinstance(response, SetupResponse):
+                raise AgentFailure("agent did not return a placement")
+            self._lifecycle.placement_chosen(response.placement)
+            return response.placement
 
     async def choose_action(self, view: PlayerView) -> Action:
-        self._require_initialized()
-        response = await self._request_serialized(ActionRequest(request_id=uuid4(), view=view))
-        if not isinstance(response, ActionResponse):
-            raise AgentFailure("agent did not return an action")
-        if response.action not in view.legal_actions:
-            raise AgentFailure("agent returned an illegal action")
-        return response.action
+        async with self._request_lock:
+            self._lifecycle.require_action(view)
+            response = await self._request(ActionRequest(request_id=uuid4(), view=view))
+            if not isinstance(response, ActionResponse):
+                raise AgentFailure("agent did not return an action")
+            self._lifecycle.action_chosen(view, response.action)
+            return response.action
 
     async def finish(self, view: PlayerView) -> None:
-        self._require_initialized()
-        if view.outcome is None:
-            raise AgentFailure("agent received an unfinished view")
-        response = await self._request_serialized(FinishedRequest(request_id=uuid4(), view=view))
-        if not isinstance(response, ReadyResponse):
-            raise AgentFailure("agent did not acknowledge match completion")
-
-    async def _request_serialized(self, request: AgentRequest) -> AgentResponse:
         async with self._request_lock:
-            return await self._request(request)
+            self._lifecycle.require_finish(view)
+            response = await self._request(FinishedRequest(request_id=uuid4(), view=view))
+            if not isinstance(response, ReadyResponse):
+                raise AgentFailure("agent did not acknowledge match completion")
+            self._lifecycle.finished(view)
 
     async def _request(self, request: AgentRequest) -> AgentResponse:
         process = self._require_process()
@@ -152,6 +169,7 @@ class SubprocessAgent:
     async def close(self) -> None:
         process = self._process
         if process is None:
+            self._lifecycle.close()
             return
         if process.stdin is not None:
             process.stdin.close()
@@ -167,7 +185,7 @@ class SubprocessAgent:
             await self._stderr_task
         self._process = None
         self._stderr_task = None
-        self._initialized = False
+        self._lifecycle.close()
 
     @staticmethod
     def _terminate_process_group(
@@ -188,7 +206,3 @@ class SubprocessAgent:
         if self._process is None:
             raise AgentFailure("agent process is not running")
         return self._process
-
-    def _require_initialized(self) -> None:
-        if not self._initialized:
-            raise AgentFailure("agent was not initialized")

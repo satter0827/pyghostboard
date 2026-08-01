@@ -4,6 +4,7 @@ from pyghostboard.agents.contracts import (
     AgentClient,
     AgentContext,
     AgentPolicy,
+    AgentProtocolError,
     InProcessAgentClient,
     PolicyFactory,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "AgentClient",
     "AgentContext",
     "AgentPolicy",
+    "AgentProtocolError",
     "InProcessAgentClient",
     "MctsAgent",
     "PolicyFactory",

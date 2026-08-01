@@ -61,9 +61,20 @@ malformed JSON, mismatched UUIDs, invalid lifecycle order, and actions outside t
 list. Standard error is drained concurrently but never parsed as protocol data. Failure, timeout,
 oversize output, or shutdown terminates the POSIX process group.
 
+The semantic lifecycle is `new -> initialized -> playing -> finished -> closed`. Initialization,
+setup, and completion happen exactly once. Actions are accepted only while playing, on the assigned
+player's active turn. In-process clients, subprocess clients, and the JSON Lines runner share the
+same validation of placements, views, legal actions, and final outcomes. Python integrations
+receive the transport-independent `AgentProtocolError` for contract violations.
+
 The bundled `RandomAgent` provides a reproducible baseline. `MctsAgent` performs information-set
 search with validated deterministic limits. Third-party in-process policies implement
 `AgentPolicy`; third-party process agents implement the versioned JSON Lines shapes.
+
+The setup candidate limit bounds retained placements. Small spaces are enumerated; larger spaces
+are sampled reproducibly without materializing every combination. To add a bundled AI, implement
+its policy, provide a JSON Lines entry module, and register its public name and module once in
+`pyghostboard.adapters.ai`.
 
 ## Public formats
 
