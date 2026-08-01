@@ -31,12 +31,15 @@ for recording, replay, and rule validation options. External AI commands are pas
 arguments without a shell, for example:
 
 ```shell
-pyghostboard play --ai-command python --ai-command /path/to/agent.py
+pyghostboard play --command python --command /path/to/agent.py
 ```
 
+Use `--language ja` or `PYGHOSTBOARD_LANGUAGE=ja` for Japanese. In a capable TTY the match stays
+in one updating view; redirected output, `NO_COLOR`, and `TERM=dumb` use append-only plain text.
+
 All transports enforce the same one-match lifecycle and validate setup, player views, legal
-actions, and completion. Adding a bundled AI requires a policy, a JSON Lines entry module, and one
-adapter registration; wire schema version 0.1.0 remains stable.
+actions, and completion. Adding a bundled AI requires a policy and registration with the single
+policy runner; wire schema version 0.1.0 remains stable.
 
 Private records contain both players' ghost kinds and placements. Protect them as secrets. Existing
 record destinations are not replaced unless `--overwrite-record` is explicitly supplied.

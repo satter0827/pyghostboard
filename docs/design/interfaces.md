@@ -18,9 +18,18 @@ The installed `pyghostboard` command provides:
 - `replay` for reading a private record;
 - `rules validate` for validating a TOML rule file.
 
-The CUI renders application results and reports typed failures without applying domain rules
-itself. External AI commands are repeated arguments and are executed directly without shell
-parsing.
+`play` is human-versus-AI only and selects MCTS by default. `--agent` selects one bundled policy;
+repeated `--command` arguments select one external executable argument vector. The selectors are
+exclusive and external commands execute directly without shell parsing. Actions accept a displayed
+number, `b2 c2`, or `b2 exit`; the CUI only matches that input against supplied legal actions.
+
+In a color-capable TTY the CUI uses one updating view containing the board, turn, previous move,
+captured pieces, and result. Non-TTY output, `NO_COLOR`, and `TERM=dumb` use append-only plain text.
+`replay` accepts a player viewpoint, step mode, and an automatic-play delay.
+
+Human-facing text uses GNU gettext. Language resolution is `--language`,
+`PYGHOSTBOARD_LANGUAGE`, operating-system locale, then English. JSON keys, enum values, Schema
+identifiers, error codes, and machine-readable values are never translated.
 
 ## Configuration
 
@@ -38,6 +47,7 @@ Runtime settings use the `PYGHOSTBOARD_` environment prefix:
 - `AI_ROLLOUT_PLIES` defaults to 96;
 - `AI_SETUP_CANDIDATE_LIMIT` defaults to 256;
 - `MAX_PLIES` defaults to 1,000.
+- `LANGUAGE` selects `en` or `ja` when no command-line language is supplied.
 
 Settings reject unknown values and invalid limits before a match starts.
 

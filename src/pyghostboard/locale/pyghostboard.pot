@@ -1,0 +1,224 @@
+# Translations template for pyghostboard.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the pyghostboard project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: pyghostboard 0.1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#, python-brace-format
+msgid "; captured {kind}"
+msgstr ""
+
+msgid "Aborted."
+msgstr ""
+
+msgid "Arguments"
+msgstr ""
+
+msgid "Board"
+msgstr ""
+
+msgid "Built-in AI policy: mcts or random."
+msgstr ""
+
+#, python-brace-format
+msgid "Captured: {pieces}"
+msgstr ""
+
+msgid "Choose a number, 'b2 c2', or 'b2 exit'"
+msgstr ""
+
+msgid "Choose distinct squares from the configured starting area."
+msgstr ""
+
+msgid "Choose one of the listed legal actions."
+msgstr ""
+
+#, python-brace-format
+msgid "Choose {count} good ghost squares separated by commas"
+msgstr ""
+
+msgid "Commands"
+msgstr ""
+
+msgid "Display language: en or ja."
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "External AI argument; repeat once for each argument."
+msgstr ""
+
+#, python-brace-format
+msgid "Invalid configuration: {detail}"
+msgstr ""
+
+msgid "Invalid value"
+msgstr ""
+
+#, python-brace-format
+msgid "Last move: {move}"
+msgstr ""
+
+msgid "Legal actions:"
+msgstr ""
+
+#, python-brace-format
+msgid "Match aborted ({reason}): {detail}"
+msgstr ""
+
+msgid "Missing argument"
+msgstr ""
+
+msgid "Missing option"
+msgstr ""
+
+msgid "Options"
+msgstr ""
+
+msgid "Play and inspect pyghostboard matches."
+msgstr ""
+
+msgid "Play as a human against an isolated AI process."
+msgstr ""
+
+msgid "Player one"
+msgstr ""
+
+msgid "Player two"
+msgstr ""
+
+msgid "Player viewpoint used for replay."
+msgstr ""
+
+msgid "Preparing match..."
+msgstr ""
+
+msgid "Press Enter for the next move"
+msgstr ""
+
+#, python-brace-format
+msgid "Record saved to {path}"
+msgstr ""
+
+msgid "Replace an existing record destination."
+msgstr ""
+
+msgid "Replay a private match record from one player viewpoint."
+msgstr ""
+
+#, python-brace-format
+msgid "Replayed {plies} ply"
+msgstr ""
+
+msgid "Save the private match record."
+msgstr ""
+
+msgid "Seconds between automatically replayed moves."
+msgstr ""
+
+msgid "Seed for reproducible AI decisions."
+msgstr ""
+
+msgid "Show this message and exit."
+msgstr ""
+
+msgid "TOML rule configuration."
+msgstr ""
+
+#, python-brace-format
+msgid "Try [blue]'{command_path} {help_option}'[/] for help."
+msgstr ""
+
+#, python-brace-format
+msgid "Turn: {player} · Ply: {ply}"
+msgstr ""
+
+msgid "Usage:"
+msgstr ""
+
+#, python-brace-format
+msgid "Valid rules: {width}x{height}, {count} ghosts per player"
+msgstr ""
+
+msgid "Validate a TOML RuleSet."
+msgstr ""
+
+msgid "Validate game rule files."
+msgstr ""
+
+msgid "Wait for input after each move."
+msgstr ""
+
+#, python-brace-format
+msgid "Winner: {player} · Reason: {reason}"
+msgstr ""
+
+#, python-brace-format
+msgid "[default: {}]"
+msgstr ""
+
+#, python-brace-format
+msgid "[env var: {}]"
+msgstr ""
+
+msgid "[required]"
+msgstr ""
+
+msgid "bad ghost"
+msgstr ""
+
+msgid "capturing all good ghosts"
+msgstr ""
+
+msgid "escape"
+msgstr ""
+
+msgid "good ghost"
+msgstr ""
+
+msgid "language must be 'en' or 'ja'"
+msgstr ""
+
+msgid "none"
+msgstr ""
+
+msgid "sacrificing all bad ghosts"
+msgstr ""
+
+#, python-brace-format
+msgid "{player} won by {reason}"
+msgstr ""
+
+#, python-brace-format
+msgid "{player} {kind}"
+msgstr ""
+
+#, python-brace-format
+msgid "{player}: {source} exits"
+msgstr ""
+
+#, python-brace-format
+msgid "{player}: {source} to {destination}"
+msgstr ""
+
+#, python-brace-format
+msgid "{source} exits"
+msgstr ""
+
+#, python-brace-format
+msgid "{source} to {destination}"
+msgstr ""

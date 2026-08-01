@@ -28,8 +28,9 @@ integrating an external process, and local players using the CUI.
   shell-free versioned JSON Lines subprocess, and rejects invalid lifecycle transitions,
   placements, player views, responses, actions, and final observations. The package provides
   reproducible random and information-set MCTS policies.
-- **FR-007 — Local CUI:** A user can play a match, replay a private record, and validate a rule file
-  through the installed `pyghostboard` command.
+- **FR-007 — Local CUI:** A user can play a human-versus-AI match, inspect one player-safe updating
+  board, replay a private record from either viewpoint with step or automatic progression, and
+  validate a rule file through the installed `pyghostboard` command in English or Japanese.
 - **FR-008 — Private recording:** A completed local match can produce a versioned replay record with
   distribution and source provenance without silently replacing an existing destination.
 - **FR-009 — Public formats:** Consumers can validate rules, snapshots, events, records, and AI
@@ -52,9 +53,11 @@ integrating an external process, and local players using the CUI.
 - **QR-006 — Compatibility:** Python 3.11 through 3.14 support the domain and application APIs on
   Windows, macOS, and Linux. The CUI, subprocess AI, and private recorder support macOS and Linux.
 - **QR-007 — Typed distribution:** Wheel distributions expose explicit typed facades, bundled
-  Schemas, a console entry point, an exact version, and complete source-commit provenance.
+  Schemas and gettext catalogs, a console entry point, an exact version, and complete source-commit
+  provenance.
 - **QR-008 — Verifiable change:** Formatting, linting, strict typing, dependency direction, tests,
-  Schema generation, packaging, compatibility, and dependency auditing gate integration.
+  Schema and translation generation, packaging, compatibility, and dependency auditing gate
+  integration.
 
 ## Release scope
 

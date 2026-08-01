@@ -12,6 +12,8 @@ operation remain outside the 0.1 series.
 Install a verified wheel or a source checkout on a supported Python and platform combination.
 Validate custom rules before starting a match. Supply runtime limits through documented
 `PYGHOSTBOARD_` environment variables and keep secrets out of rule files and command arguments.
+`PYGHOSTBOARD_LANGUAGE` may contain `en`, `ja`, or a locale-qualified form such as `ja_JP`. An
+unsupported value falls back to English; `--language` takes precedence for one invocation.
 
 ## Match failures
 

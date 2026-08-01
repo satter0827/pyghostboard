@@ -38,7 +38,7 @@ Passing automation never substitutes for a required human decision or manual pro
 | FR-004, QR-003 | Replay, restore, codec, and fixed-seed tests | Review of any new nondeterministic input |
 | FR-005, QR-004 | Application-service and in-memory atomicity tests | Atomic transaction evidence for each external store |
 | FR-006, QR-005 | Policy, MCTS, AI lifecycle, timeout, size, stderr, exit, and process-group tests | Review of configured production limits |
-| FR-007 | CLI unit and integration tests; installed-wheel smoke tests | Usability review of prompts, names, and errors |
+| FR-007 | English/Japanese CLI, input, TTY fallback, replay, and installed-wheel tests | Usability review of prompts, names, translations, and errors |
 | FR-008 | Recorder promotion, overwrite, discard, and replay tests | Destination permission and retention review |
 | FR-009, QR-007 | Schema generation and conformance; distribution and release-verifier tests | Compatibility decision for each format-version change |
 | QR-002 | Import Linter and architecture structure tests | Review of new package boundaries |
