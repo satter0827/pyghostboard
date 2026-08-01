@@ -34,6 +34,8 @@ def test_release_workflow_builds_artifacts_without_registry_publication() -> Non
     assert "gh run list" in workflow
     assert "actions/upload-artifact@" in workflow
     assert "git push origin" in workflow
+    assert "VERSION: ${{ inputs.version }}" in workflow
+    assert '--version "${{ inputs.version }}"' not in workflow
     assert "pypi" not in lowered
     assert "id-token: write" not in lowered
     assert "gh-action-pypi-publish" not in lowered
