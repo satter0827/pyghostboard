@@ -1,5 +1,6 @@
 """Subprocess isolation and bundled-agent integration tests."""
 
+import asyncio
 import os
 import sys
 import time
@@ -8,7 +9,14 @@ from uuid import UUID
 import pytest
 
 from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent
-from pyghostboard.agents import AgentContext, MctsAgent, RandomAgent, SearchConfig
+from pyghostboard.agents import (
+    AgentContext,
+    AgentPolicy,
+    AgentProtocolError,
+    MctsAgent,
+    RandomAgent,
+    SearchConfig,
+)
 from pyghostboard.domain import GameOutcome, Match, OutcomeReason, Placement, Player, RuleSet
 
 CONTEXT = AgentContext(player=Player.TWO, rules=RuleSet.standard(), seed=7)
@@ -87,30 +95,82 @@ async def test_semantic_agent_client_completes_its_lifecycle() -> None:
         await agent.finish(final_view)
 
 
-def test_mcts_and_random_policies_complete_a_seeded_match() -> None:
+@pytest.mark.asyncio
+async def test_subprocess_client_rejects_invalid_semantic_order() -> None:
     rules = RuleSet.standard()
-    mcts = MctsAgent(
-        AgentContext(player=Player.ONE, rules=rules, seed=31),
-        SearchConfig(iterations=12, rollout_plies=12),
-    )
-    random_agent = RandomAgent(AgentContext(player=Player.TWO, rules=rules, seed=37))
+    one = rules.start_squares(Player.ONE)
+    two = rules.start_squares(Player.TWO)
     match = Match.start(
-        UUID("00000000-0000-0000-0000-000000000030"),
+        UUID("00000000-0000-0000-0000-000000000031"),
         rules,
         {
-            Player.ONE: mcts.choose_placement(),
-            Player.TWO: random_agent.choose_placement(),
+            Player.ONE: Placement(good=one[:4], bad=one[4:]),
+            Player.TWO: Placement(good=two[:4], bad=two[4:]),
         },
     )
+    match = match.play(Player.ONE, match.legal_actions()[0]).match
+    view = match.view_for(Player.TWO)
+    final_view = view.model_copy(
+        update={"outcome": GameOutcome(winner=Player.ONE, reason=OutcomeReason.CAPTURE_GOOD)}
+    )
 
-    for _ in range(500):
+    async with SubprocessAgent([sys.executable, "-m", "pyghostboard.random_agent"]) as agent:
+        await agent.initialize(CONTEXT)
+        with pytest.raises(AgentProtocolError, match="while initialized"):
+            await agent.choose_action(view)
+        await agent.choose_placement()
+        with pytest.raises(AgentProtocolError, match="while playing"):
+            await agent.choose_placement()
+        await agent.finish(final_view)
+        with pytest.raises(AgentProtocolError, match="while finished"):
+            await agent.choose_action(view)
+
+
+@pytest.mark.asyncio
+async def test_subprocess_client_serializes_concurrent_lifecycle_calls() -> None:
+    async with SubprocessAgent([sys.executable, "-m", "pyghostboard.random_agent"]) as agent:
+        await agent.initialize(CONTEXT)
+        results = await asyncio.gather(
+            agent.choose_placement(), agent.choose_placement(), return_exceptions=True
+        )
+
+    assert sum(isinstance(result, Placement) for result in results) == 1
+    assert sum(isinstance(result, AgentProtocolError) for result in results) == 1
+
+
+def _play_policy_match(seed: int, mcts_player: Player) -> Player:
+    rules = RuleSet.standard()
+    mcts = MctsAgent(
+        AgentContext(player=mcts_player, rules=rules, seed=seed),
+        SearchConfig(iterations=16, rollout_plies=16),
+    )
+    random_player = mcts_player.opponent
+    random_agent = RandomAgent(AgentContext(player=random_player, rules=rules, seed=seed + 1_000))
+    policies: dict[Player, AgentPolicy] = {
+        mcts_player: mcts,
+        random_player: random_agent,
+    }
+    match = Match.start(
+        UUID(int=seed + 1),
+        rules,
+        {player: policies[player].choose_placement() for player in Player},
+    )
+
+    for _ in range(300):
         if match.outcome is not None:
             break
         view = match.view_for(match.current_player)
-        policy = mcts if match.current_player is Player.ONE else random_agent
-        match = match.play(match.current_player, policy.choose_action(view)).match
+        action = policies[match.current_player].choose_action(view)
+        match = match.play(match.current_player, action).match
 
     assert match.outcome is not None
+    return match.outcome.winner
+
+
+def test_mcts_scores_at_least_sixty_percent_against_random() -> None:
+    wins = sum(_play_policy_match(seed, side) is side for seed in range(5) for side in Player)
+
+    assert wins >= 6
 
 
 @pytest.mark.asyncio

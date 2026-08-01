@@ -25,8 +25,8 @@ integrating an external process, and local players using the CUI.
   through an application service backed by an injected persistence port.
 - **FR-006 — Replaceable AI:** The host runs a transport-independent policy in process or through a
   shell-free versioned JSON Lines subprocess, and rejects invalid lifecycle transitions,
-  responses, and actions. The package provides reproducible random and information-set MCTS
-  policies.
+  placements, player views, responses, actions, and final observations. The package provides
+  reproducible random and information-set MCTS policies.
 - **FR-007 — Local CUI:** A user can play a match, replay a private record, and validate a rule file
   through the installed `pyghostboard` command.
 - **FR-008 — Private recording:** A completed local match can produce a versioned replay record with

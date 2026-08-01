@@ -9,17 +9,14 @@ from dataclasses import dataclass
 from itertools import combinations
 
 from pyghostboard.agents.contracts import AgentContext
-from pyghostboard.domain.match import Match
 from pyghostboard.domain.models import (
     Action,
     GhostKind,
     Placement,
     PlayerView,
-    PrivateMatchSnapshot,
-    PrivatePiece,
-    RemovalReason,
     Square,
 )
+from pyghostboard.domain.position import Position
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,9 +52,7 @@ class MctsAgent:
     def choose_placement(self) -> Placement:
         rules = self._context.rules
         starts = rules.start_squares(self._context.player)
-        candidates = list(combinations(starts, rules.good_count))
-        if len(candidates) > self._config.setup_candidate_limit:
-            candidates = self._random.sample(candidates, self._config.setup_candidate_limit)
+        candidates = self._placement_candidates(starts, rules.good_count)
         exits = tuple(exit_.square for exit_ in rules.exits(self._context.player))
         scored = [(self._placement_score(good, exits), good) for good in candidates]
         best_score = max(score for score, _ in scored)
@@ -78,13 +73,13 @@ class MctsAgent:
 
         statistics: defaultdict[tuple[Action, ...], _Statistics] = defaultdict(_Statistics)
         for _ in range(self._config.iterations):
-            match = self._determinize(view)
+            position = self._determinize(view)
             path: tuple[Action, ...] = ()
             visited: list[tuple[Action, ...]] = []
             for _depth in range(self._config.rollout_plies):
-                if match.outcome is not None:
+                if position.outcome is not None:
                     break
-                legal = match.legal_actions()
+                legal = position.legal_actions()
                 if not legal:
                     break
                 unexplored = [action for action in legal if statistics[(*path, action)].visits == 0]
@@ -92,8 +87,8 @@ class MctsAgent:
                     action = self._random.choice(unexplored)
                     path += (action,)
                     visited.append(path)
-                    match = match.play(match.current_player, action).match
-                    match = self._rollout(match, self._config.rollout_plies - _depth - 1)
+                    position = position.play(position.current_player, action).position
+                    position = self._rollout(position, self._config.rollout_plies - _depth - 1)
                     break
                 parent_visits = max(1, statistics[path].visits)
                 action = max(
@@ -101,13 +96,13 @@ class MctsAgent:
                     key=lambda candidate: self._uct(
                         statistics[(*path, candidate)],
                         parent_visits,
-                        maximize=match.current_player is self._context.player,
+                        maximize=position.current_player is self._context.player,
                     ),
                 )
                 path += (action,)
                 visited.append(path)
-                match = match.play(match.current_player, action).match
-            reward = self._evaluate(match)
+                position = position.play(position.current_player, action).position
+            reward = self._evaluate(position)
             statistics[()].visits += 1
             statistics[()].value += reward
             for key in visited:
@@ -126,7 +121,7 @@ class MctsAgent:
         if view.player is not self._context.player or view.outcome is None:
             raise ValueError("agent received an invalid final view")
 
-    def _determinize(self, view: PlayerView) -> Match:
+    def _determinize(self, view: PlayerView) -> Position:
         rules = self._context.rules
         captured = list(view.captured)
         captured_opponent_good = sum(
@@ -145,73 +140,63 @@ class MctsAgent:
             raise ValueError("view has an impossible number of opposing pieces")
         good_squares = set(self._random.sample(list(view.opponent_squares), remaining_good))
 
-        pieces = [
-            PrivatePiece(id=piece.id, owner=view.player, kind=piece.kind, square=piece.square)
-            for piece in view.own_pieces
-        ]
-        for index, square in enumerate(view.opponent_squares, start=1):
-            pieces.append(
-                PrivatePiece(
-                    id=f"hypothesis-{view.player.opponent.value}-{index}",
-                    owner=view.player.opponent,
-                    kind=GhostKind.GOOD if square in good_squares else GhostKind.BAD,
-                    square=square,
-                )
-            )
-        removed_at = Square(x=0, y=0)
-        for index, piece in enumerate(captured, start=1):
-            pieces.append(
-                PrivatePiece(
-                    id=f"hypothesis-captured-{piece.owner.value}-{piece.kind.value}-{index}",
-                    owner=piece.owner,
-                    kind=piece.kind,
-                    square=None,
-                    removal=RemovalReason.CAPTURED,
-                    removed_at=removed_at,
-                )
-            )
-        expected_total = 2 * (rules.good_count + rules.bad_count)
-        if len(pieces) != expected_total:
-            raise ValueError("view does not account for every configured piece")
-        first_player = (
-            view.current_player if view.revision % 2 == 0 else view.current_player.opponent
-        )
-        return Match.restore(
-            PrivateMatchSnapshot(
-                match_id=view.match_id,
-                revision=view.revision,
-                rules=rules,
-                first_player=first_player,
-                current_player=view.current_player,
-                pieces=tuple(pieces),
-                outcome=view.outcome,
-            )
+        return Position.from_view(
+            view,
+            rules,
+            {
+                square: GhostKind.GOOD if square in good_squares else GhostKind.BAD
+                for square in view.opponent_squares
+            },
         )
 
-    def _rollout(self, match: Match, remaining: int) -> Match:
+    def _rollout(self, position: Position, remaining: int) -> Position:
         for _ in range(remaining):
-            if match.outcome is not None:
+            if position.outcome is not None:
                 break
-            legal = match.legal_actions()
+            legal = position.legal_actions()
             if not legal:
                 break
-            match = match.play(match.current_player, self._random.choice(legal)).match
-        return match
+            position = position.play(position.current_player, self._random.choice(legal)).position
+        return position
 
-    def _evaluate(self, match: Match) -> float:
-        if match.outcome is not None:
-            return 1.0 if match.outcome.winner is self._context.player else -1.0
-        snapshot = match.snapshot()
-        own = [p for p in snapshot.pieces if p.owner is self._context.player and p.square]
-        opposing = [
-            p for p in snapshot.pieces if p.owner is self._context.player.opponent and p.square
-        ]
+    def _evaluate(self, position: Position) -> float:
+        if position.outcome is not None:
+            return 1.0 if position.outcome.winner is self._context.player else -1.0
+        own = [p for p in position.pieces if p.owner is self._context.player]
+        opposing = [p for p in position.pieces if p.owner is self._context.player.opponent]
         own_good = sum(piece.kind is GhostKind.GOOD for piece in own)
         own_bad = sum(piece.kind is GhostKind.BAD for piece in own)
         opposing_good = sum(piece.kind is GhostKind.GOOD for piece in opposing)
         opposing_bad = sum(piece.kind is GhostKind.BAD for piece in opposing)
         score = (own_good - opposing_good) + (opposing_bad - own_bad) * 0.5
         return math.tanh(score / max(1, self._context.rules.good_count)) * 0.5
+
+    def _placement_candidates(
+        self, starts: tuple[Square, ...], good_count: int
+    ) -> list[tuple[Square, ...]]:
+        total = math.comb(len(starts), good_count)
+        limit = min(total, self._config.setup_candidate_limit)
+        if total <= limit:
+            return list(combinations(starts, good_count))
+        ranks: set[int] = set()
+        for upper in range(total - limit, total):
+            candidate = self._random.randrange(upper + 1)
+            ranks.add(upper if candidate in ranks else candidate)
+        return [self._unrank_combination(starts, good_count, rank) for rank in sorted(ranks)]
+
+    @staticmethod
+    def _unrank_combination(values: tuple[Square, ...], size: int, rank: int) -> tuple[Square, ...]:
+        selected: list[Square] = []
+        start = 0
+        for remaining in range(size, 0, -1):
+            for index in range(start, len(values)):
+                suffixes = math.comb(len(values) - index - 1, remaining - 1)
+                if rank < suffixes:
+                    selected.append(values[index])
+                    start = index + 1
+                    break
+                rank -= suffixes
+        return tuple(selected)
 
     def _uct(self, statistics: _Statistics, parent_visits: int, *, maximize: bool) -> float:
         exploitation = statistics.value / statistics.visits

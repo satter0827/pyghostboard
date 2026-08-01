@@ -8,6 +8,7 @@ from uuid import UUID
 
 import pytest
 
+from pyghostboard.adapters.ai import bundled_agent_command
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
 from pyghostboard.agents.random import RandomAgent
@@ -49,6 +50,13 @@ def test_runtime_settings_use_prefixed_environment(monkeypatch: pytest.MonkeyPat
     assert settings.agent_timeout == 2.5
     assert settings.max_plies == 42
     assert settings.ai_iterations == 25
+
+
+def test_bundled_agent_commands_are_resolved_by_the_adapter() -> None:
+    assert bundled_agent_command(None)[-1] == "pyghostboard.mcts_agent"
+    assert bundled_agent_command("random")[-1] == "pyghostboard.random_agent"
+    with pytest.raises(ValueError, match="mcts, random"):
+        bundled_agent_command("unknown")
 
 
 def test_toml_rules_are_validated(tmp_path: Path) -> None:
@@ -175,7 +183,7 @@ def test_schema_paths_exist_and_unknown_names_fail() -> None:
 
 def test_random_agent_rejects_invalid_protocol_order() -> None:
     setup = SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000025"))
-    with pytest.raises(RuntimeError, match="not initialized"):
+    with pytest.raises(RuntimeError, match="while new"):
         run_agent([request_adapter.dump_json(setup) + b"\n"], StringIO(), RandomAgent)
 
     initialize = InitializeRequest(
@@ -185,5 +193,33 @@ def test_random_agent_rejects_invalid_protocol_order() -> None:
         rules=RuleSet.standard(),
     )
     source = [request_adapter.dump_json(initialize) + b"\n"] * 2
-    with pytest.raises(RuntimeError, match="already initialized"):
+    with pytest.raises(RuntimeError, match="while initialized"):
+        run_agent(source, StringIO(), RandomAgent)
+
+    source = [
+        request_adapter.dump_json(initialize) + b"\n",
+        request_adapter.dump_json(setup) + b"\n",
+        request_adapter.dump_json(setup) + b"\n",
+    ]
+    with pytest.raises(RuntimeError, match="while playing"):
+        run_agent(source, StringIO(), RandomAgent)
+
+    match = _match().play(Player.ONE, _match().legal_actions()[0]).match
+    final_view = match.view_for(Player.TWO).model_copy(
+        update={"outcome": GameOutcome(winner=Player.ONE, reason=OutcomeReason.CAPTURE_GOOD)}
+    )
+    finished = FinishedRequest(
+        request_id=UUID("00000000-0000-0000-0000-000000000027"), view=final_view
+    )
+    action = ActionRequest(
+        request_id=UUID("00000000-0000-0000-0000-000000000028"),
+        view=match.view_for(Player.TWO),
+    )
+    source = [
+        request_adapter.dump_json(initialize) + b"\n",
+        request_adapter.dump_json(setup) + b"\n",
+        request_adapter.dump_json(finished) + b"\n",
+        request_adapter.dump_json(action) + b"\n",
+    ]
+    with pytest.raises(RuntimeError, match="while finished"):
         run_agent(source, StringIO(), RandomAgent)

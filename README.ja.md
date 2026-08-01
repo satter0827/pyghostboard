@@ -33,6 +33,9 @@ pyghostboard play --seed 7
 pyghostboard play --ai-command python --ai-command /path/to/agent.py
 ```
 
+すべてのtransportは同じ1対局のlifecycleを適用し、配置、player view、合法手、終了を検証します。
+同梱AIはpolicy、JSON Lines実行module、adapterの1登録で追加でき、wire schema 0.1.0は維持されます。
+
 秘密対局記録には両プレイヤーの駒種と配置が含まれます。secretとして保護してください。既存の
 記録先は、`--overwrite-record`を明示しない限り置き換えません。
 
