@@ -1,0 +1,219 @@
+{
+  "$defs": {
+    "ActionResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "discriminator": {
+            "mapping": {
+              "escape": "#/$defs/Escape",
+              "move": "#/$defs/Move"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Move"
+            },
+            {
+              "$ref": "#/$defs/Escape"
+            }
+          ],
+          "title": "Action"
+        },
+        "protocol_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "action",
+          "default": "action",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "action"
+      ],
+      "title": "ActionResponse",
+      "type": "object"
+    },
+    "Escape": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Square"
+        },
+        "type": {
+          "const": "escape",
+          "default": "escape",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "title": "Escape",
+      "type": "object"
+    },
+    "Move": {
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/Square"
+        },
+        "source": {
+          "$ref": "#/$defs/Square"
+        },
+        "type": {
+          "const": "move",
+          "default": "move",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "destination"
+      ],
+      "title": "Move",
+      "type": "object"
+    },
+    "Placement": {
+      "additionalProperties": false,
+      "properties": {
+        "bad": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Bad",
+          "type": "array"
+        },
+        "good": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Good",
+          "type": "array"
+        }
+      },
+      "required": [
+        "good",
+        "bad"
+      ],
+      "title": "Placement",
+      "type": "object"
+    },
+    "ReadyResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "protocol_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "ready",
+          "default": "ready",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id"
+      ],
+      "title": "ReadyResponse",
+      "type": "object"
+    },
+    "SetupResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "placement": {
+          "$ref": "#/$defs/Placement"
+        },
+        "protocol_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "request_id": {
+          "format": "uuid",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "setup",
+          "default": "setup",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_id",
+        "placement"
+      ],
+      "title": "SetupResponse",
+      "type": "object"
+    },
+    "Square": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Square",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/agent-response-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "discriminator": {
+    "mapping": {
+      "action": "#/$defs/ActionResponse",
+      "ready": "#/$defs/ReadyResponse",
+      "setup": "#/$defs/SetupResponse"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ReadyResponse"
+    },
+    {
+      "$ref": "#/$defs/SetupResponse"
+    },
+    {
+      "$ref": "#/$defs/ActionResponse"
+    }
+  ]
+}
