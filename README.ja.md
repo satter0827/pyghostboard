@@ -78,10 +78,13 @@ uv sync --locked --group dev
 uv run pytest
 ```
 
-信頼境界と依存方向は[アーキテクチャ](https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md)、
-外部連携は[AI protocol](https://github.com/satter0827/pyghostboard/blob/main/docs/ai-protocol.md)と
-[integration guide](https://github.com/satter0827/pyghostboard/blob/main/docs/integration.md)、検証手順と
-ブランチ運用は[コントリビューションガイド](https://github.com/satter0827/pyghostboard/blob/main/CONTRIBUTING.md)を参照してください。
+Visual Studio Codeでは、推奨拡張機能をインストールし、**実行とデバッグ**から`App: Play`を
+選ぶと、環境を同期して対話型の対局を開始できます。共有タスクとデバッグ方法は
+[Visual Studio Codeの開発手順](CONTRIBUTING.md#visual-studio-code)を参照してください。
+
+要件、アーキテクチャ、インターフェース、品質、デリバリー、運用は
+[ドキュメント](docs/README.md)、検証手順とブランチ運用は
+[コントリビューションガイド](CONTRIBUTING.md)を参照してください。
 
 ## 0.1.0の範囲
 

@@ -79,11 +79,13 @@ uv sync --locked --group dev
 uv run pytest
 ```
 
-See [Architecture](https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md),
-[AI protocol](https://github.com/satter0827/pyghostboard/blob/main/docs/ai-protocol.md), and
-[integration guide](https://github.com/satter0827/pyghostboard/blob/main/docs/integration.md).
-[Contributing](https://github.com/satter0827/pyghostboard/blob/main/CONTRIBUTING.md) describes the
-complete verification and branch workflow.
+Visual Studio Code users can install the recommended workspace extensions and select `App: Play`
+from **Run and Debug** to synchronize the environment and start an interactive match. See the
+[Visual Studio Code workflow](CONTRIBUTING.md#visual-studio-code) for shared tasks and debugging.
+
+See the [documentation](docs/README.md) for requirements, architecture, interfaces, quality,
+delivery, and operations. [Contributing](CONTRIBUTING.md) describes the complete verification and
+branch workflow.
 
 ## Release scope
 

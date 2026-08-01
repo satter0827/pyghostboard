@@ -1,13 +1,29 @@
 # Contributing
 
 Thank you for contributing to pyghostboard. Keep each pull request focused on one cause and
-consistent with the dependency boundaries in [Architecture](docs/architecture.md).
+consistent with the released [design](docs/design/README.md).
 
 ## Setup
 
 ```shell
 uv sync --locked --group dev
 ```
+
+### Visual Studio Code
+
+Install the workspace's recommended extensions and open the repository root. Press F5 and select
+`App: Play` to synchronize the locked development environment and start an interactive match in
+the integrated terminal. Select `Tests: Current File` to debug the open test file.
+
+Use **Tasks: Run Task** for the shared workflows:
+
+- `Environment: Sync` installs the locked development dependencies.
+- `Code: Format` formats Python files with Ruff.
+- `Check: Fast` runs formatting, lint, type, import-boundary, structure, and unit checks.
+- `Test: All` runs the complete test suite.
+
+The workspace uses `.venv` and enables pytest discovery, Ruff formatting, and Ruff fixes for Python
+files. These settings do not change non-Python files on save.
 
 ## Branches and worktrees
 
@@ -89,6 +105,6 @@ behavior requires them.
 ## Pull requests
 
 Use a Conventional Commit prefix in the title, such as `feat:`, `fix:`, `refactor:`, `test:`,
-`docs:`, or `chore:`. Describe the cause, the ownership boundary changed, what remains outside the
-change, and the exact validation performed. Update architecture documentation in the same pull
-request when a dependency boundary changes.
+`docs:`, or `chore:`. Describe the cause, affected requirements and design, what remains outside
+the change, automated evidence, human decisions, manual procedures, and the exact validation
+performed. Update the design in the same pull request when an implemented contract changes.

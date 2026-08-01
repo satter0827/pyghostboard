@@ -38,7 +38,7 @@ pyghostboard = "pyghostboard.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/satter0827/pyghostboard"
-Documentation = "https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md"
+Documentation = "https://github.com/satter0827/pyghostboard/blob/main/docs/README.md"
 Repository = "https://github.com/satter0827/pyghostboard"
 Issues = "https://github.com/satter0827/pyghostboard/issues"
 
@@ -82,7 +82,8 @@ only-include = [
     "README.md",
     "README.ja.md",
     "SECURITY.md",
-    "docs",
+    "docs/README.md",
+    "docs/design",
     "examples",
     "pyproject.toml",
     "src",
