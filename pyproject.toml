@@ -1,0 +1,93 @@
+[project]
+name = "pyghostboard"
+version = "0.1.0.dev0"
+description = "A typed Python engine for a hidden-information board game with fair AI."
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+license = "MIT"
+authors = [
+    { name = "pyghostboard contributors" },
+]
+keywords = [
+    "artificial-intelligence",
+    "board-game",
+    "hidden-information",
+    "monte-carlo-tree-search",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/satter0827/pyghostboard"
+Documentation = "https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md"
+Repository = "https://github.com/satter0827/pyghostboard"
+Issues = "https://github.com/satter0827/pyghostboard/issues"
+
+[dependency-groups]
+dev = [
+    "build>=1.2,<2",
+    "hatchling>=1.27,<2",
+    "mypy>=1.14,<2",
+    "pytest>=8.3,<10",
+    "pytest-cov>=6,<8",
+    "ruff>=0.9,<1",
+    "twine>=6,<7",
+]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyghostboard"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "LICENSE",
+    "README.md",
+    "pyproject.toml",
+    "src",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-config --strict-markers"
+testpaths = ["tests"]
+tmp_path_retention_policy = "failed"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+files = ["src", "tests"]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+
+[tool.coverage.run]
+branch = true
+source = ["pyghostboard"]
+
+[tool.coverage.report]
+fail_under = 90
+precision = 0
+show_missing = true
+skip_covered = true
