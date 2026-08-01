@@ -7,7 +7,7 @@ from pyghostboard import _platform
 from pyghostboard.adapters.ai import SubprocessAgentController
 from pyghostboard.adapters.recording import MatchRecorder
 from pyghostboard.application import PlayerContext
-from pyghostboard.cli import app
+from pyghostboard.cli import create_app
 from pyghostboard.domain import Player, RuleSet
 
 
@@ -32,7 +32,7 @@ async def test_agent_start_is_rejected_on_windows(monkeypatch: pytest.MonkeyPatc
 def test_cui_is_rejected_on_windows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_platform, "CURRENT_PLATFORM", "win32")
 
-    result = CliRunner().invoke(app, ["play"])
+    result = CliRunner().invoke(create_app("en"), ["play"])
 
     assert result.exit_code == 2
     assert "domain API remains supported on Windows" in result.stdout

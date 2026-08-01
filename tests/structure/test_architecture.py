@@ -75,7 +75,7 @@ def _layer(module: str) -> int | None:
         return 2
     if module == "pyghostboard.agent_runner":
         return 3
-    if module == "pyghostboard.cli":
+    if module == "pyghostboard.cli" or module.startswith("pyghostboard.cli."):
         return 3
     return None
 

@@ -28,6 +28,13 @@ def verify_distribution(directory: Path, version: str, expected_commit: str | No
         )
 
     with zipfile.ZipFile(wheel) as archive:
+        required_package_data = {
+            "pyghostboard/locale/pyghostboard.pot",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.po",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.mo",
+        }
+        if not required_package_data <= set(archive.namelist()):
+            raise ValueError("wheel does not contain all translation catalogs")
         metadata_names = [
             name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
         ]

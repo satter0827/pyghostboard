@@ -112,6 +112,7 @@ def check_quality() -> None:
         ],
         ["uv", "run", "pytest", "tests/structure"],
         ["uv", "run", "python", "tools/generate_schemas.py", "--check"],
+        ["uv", "run", "python", "tools/i18n.py", "check"],
     ]
     for command in commands:
         run(command)
@@ -218,6 +219,7 @@ def smoke_test_wheel(
         ["rules", "validate", "--help"],
     ):
         run([str(cli), *arguments])
+    run([str(cli), "--language", "ja", "--help"])
     run([str(python), "-m", "pyghostboard.agent_runner", "--help"])
     run(
         [

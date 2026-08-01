@@ -24,8 +24,8 @@ Dependencies point inward:
 - `protocol` defines versioned AI messages using public domain values.
 - `adapters` own environment and TOML configuration, subprocess communication, and private record
   files. Adapter modules do not depend on sibling adapters.
-- `cli` assembles adapters and application services, prompts users, and renders results. It does
-  not evaluate game rules.
+- `cli` separates command assembly, configuration resolution, human input, gettext, and display.
+  It assembles adapters and application services but does not evaluate game rules.
 
 Internal modules import the module that defines a value. Package facade modules provide stable
 imports only to external consumers. Import Linter and structure tests enforce the acyclic inward
@@ -40,6 +40,11 @@ rules, request identity, and lifecycle state.
 
 The separation is structural rather than a convention: opposing live pieces in `PlayerView` have
 no kind field, and private host models cannot appear in generated AI wire Schemas.
+
+The display is a `MatchObserver` for one configured player. TTY capability selects either a Rich
+Live screen or an append-only renderer without changing its input contract. Language resolution
+happens before the Typer command tree is constructed, while stable wire names and error codes stay
+outside gettext.
 
 ## Match execution and agent contracts
 

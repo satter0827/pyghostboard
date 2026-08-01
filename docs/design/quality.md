@@ -26,6 +26,10 @@ Ruff enforces formatting and selected correctness rules. Mypy checks source and 
 mode. Import Linter enforces the declared layer contract. Public facades use explicit `__all__`
 lists, and the distribution exposes `py.typed`.
 
+`tools/i18n.py check` extracts every CLI `tr()` message, compares the deterministic POT and Japanese
+PO inventories, rejects empty translations, and verifies the compiled GNU MO bytes. Distribution
+verification requires POT, PO, and MO files, and the isolated-wheel smoke test runs Japanese help.
+
 ## Information security
 
 Player-safe output is verified as a noninterference property: changing every possible opposing

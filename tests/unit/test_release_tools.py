@@ -21,6 +21,12 @@ def _write_archives(directory: Path, version: str, commit: str = "a" * 40) -> No
             "pyghostboard/_build_info.py",
             f'from typing import Final\n\nBUILD_COMMIT: Final[str | None] = "{commit}"\n',
         )
+        for path in (
+            "pyghostboard/locale/pyghostboard.pot",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.po",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.mo",
+        ):
+            archive.writestr(path, b"catalog")
     package_info = directory / "PKG-INFO"
     package_info.write_text(
         f"Metadata-Version: 2.4\nName: pyghostboard\nVersion: {version}\n",
@@ -51,6 +57,21 @@ def test_release_verifier_rejects_wrong_build_provenance(tmp_path: Path) -> None
     _write_archives(tmp_path, "0.1.0")
     with pytest.raises(ValueError, match="provenance"):
         verify_distribution(tmp_path, "0.1.0", "b" * 40)
+
+
+def test_release_verifier_rejects_missing_translation_catalog(tmp_path: Path) -> None:
+    _write_archives(tmp_path, "0.1.0")
+    wheel = tmp_path / "pyghostboard-0.1.0-py3-none-any.whl"
+    # Rebuild without one required member because ZipFile cannot delete in place.
+    replacement = tmp_path / "replacement.whl"
+    with zipfile.ZipFile(wheel) as source, zipfile.ZipFile(replacement, "w") as target:
+        for name in source.namelist():
+            if name != "pyghostboard/locale/pyghostboard.pot":
+                target.writestr(name, source.read(name))
+    replacement.replace(wheel)
+
+    with pytest.raises(ValueError, match="translation catalogs"):
+        verify_distribution(tmp_path, "0.1.0")
 
 
 def test_schema_check_detects_stale_generated_document(tmp_path: Path) -> None:
