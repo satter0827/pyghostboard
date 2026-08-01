@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,6 +69,32 @@ def test_supported_python_configuration_matches_project_metadata() -> None:
     configured = set(re.findall(r'python-version = "(3\.\d+)"', pyproject))
     classifiers = set(re.findall(r'Programming Language :: Python :: (3\.\d+)"', pyproject))
     assert configured == classifiers == {"3.11", "3.12", "3.13", "3.14"}
+
+
+def test_local_tool_state_is_grouped_under_one_private_directory() -> None:
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    tools = pyproject["tool"]
+    assert tools["pytest"]["ini_options"]["cache_dir"] == ".pyghostboard/cache/pytest"
+    assert tools["ruff"]["cache-dir"] == ".pyghostboard/cache/ruff"
+    assert tools["mypy"]["cache_dir"] == ".pyghostboard/cache/mypy"
+    assert tools["coverage"]["run"]["data_file"] == ".pyghostboard/coverage/data"
+    assert tools["coverage"]["html"]["directory"] == ".pyghostboard/coverage/html"
+    assert tools["coverage"]["json"]["output"] == ".pyghostboard/coverage/coverage.json"
+    assert tools["coverage"]["lcov"]["output"] == ".pyghostboard/coverage/coverage.lcov"
+    assert tools["coverage"]["xml"]["output"] == ".pyghostboard/coverage/coverage.xml"
+
+    release_gate = (ROOT / "scripts" / "release_gate.py").read_text(encoding="utf-8")
+    assert 'CACHE_ROOT / "import-linter"' in release_gate
+    hypothesis_config = (ROOT / "tests" / "conftest.py").read_text(encoding="utf-8")
+    assert '".pyghostboard" / "cache" / "hypothesis"' in hypothesis_config
+    tasks = json.loads((ROOT / ".vscode" / "tasks.json").read_text(encoding="utf-8"))
+    import_task = next(task for task in tasks["tasks"] if task["label"] == "Check: Imports")
+    assert import_task["args"] == [
+        "run",
+        "lint-imports",
+        "--cache-dir",
+        ".pyghostboard/cache/import-linter",
+    ]
 
 
 def test_review_policy_is_the_single_agent_review_source() -> None:

@@ -89,7 +89,12 @@
       "label": "Check: Imports",
       "type": "process",
       "command": "uv",
-      "args": ["run", "lint-imports"],
+      "args": [
+        "run",
+        "lint-imports",
+        "--cache-dir",
+        ".pyghostboard/cache/import-linter"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },

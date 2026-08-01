@@ -6,12 +6,8 @@ __pycache__/
 build/
 dist/
 
-# Test and quality tools
-.coverage
-htmlcov/
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
+# Local development state
+.pyghostboard/
 
 # Editors and operating systems
 .DS_Store
@@ -25,7 +21,3 @@ htmlcov/
 # Local configuration
 .env
 .env.*
-
-# Codex workspace artifacts
-work/
-outputs/

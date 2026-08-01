@@ -109,6 +109,7 @@ compatibility = [
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-config --strict-markers"
+cache_dir = ".pyghostboard/cache/pytest"
 testpaths = ["tests"]
 tmp_path_retention_policy = "failed"
 
@@ -126,6 +127,7 @@ layers = [
 ]
 
 [tool.ruff]
+cache-dir = ".pyghostboard/cache/ruff"
 line-length = 100
 src = ["src", "tests"]
 target-version = "py311"
@@ -137,6 +139,7 @@ select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 quote-style = "double"
 
 [tool.mypy]
+cache_dir = ".pyghostboard/cache/mypy"
 files = ["src", "tests", "scripts", "tools"]
 python_version = "3.11"
 strict = true
@@ -148,6 +151,7 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 branch = true
+data_file = ".pyghostboard/coverage/data"
 source = ["pyghostboard"]
 omit = [
     "*/mcts_agent.py",
@@ -159,3 +163,15 @@ fail_under = 90
 precision = 0
 show_missing = true
 skip_covered = true
+
+[tool.coverage.html]
+directory = ".pyghostboard/coverage/html"
+
+[tool.coverage.json]
+output = ".pyghostboard/coverage/coverage.json"
+
+[tool.coverage.lcov]
+output = ".pyghostboard/coverage/coverage.lcov"
+
+[tool.coverage.xml]
+output = ".pyghostboard/coverage/coverage.xml"
