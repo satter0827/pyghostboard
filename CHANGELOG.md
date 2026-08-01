@@ -8,6 +8,8 @@
   records with build provenance.
 - Add transport-independent AI contracts, reproducible random and information-set MCTS policies,
   an isolated JSON Lines adapter, and bounded process I/O.
+- Enforce one shared AI lifecycle across transports, bound setup sampling before materialization,
+  and keep MCTS hypotheses independent of private persistence models.
 - Add Rich commands for play, replay, and rule validation.
 - Add versioned JSON Schema documents, typed distributions, compatibility CI, and exact-version
   release artifacts without registry publication.

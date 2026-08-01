@@ -196,6 +196,22 @@ def test_ai_wire_schema_cannot_contain_private_host_models() -> None:
     assert "PrivatePiece" not in schemas
 
 
+def test_agent_policies_do_not_import_private_host_models() -> None:
+    private_names = {"PrivateMatchEvent", "PrivateMatchSnapshot", "PrivatePiece"}
+    violations: list[str] = []
+    for module, path in _modules().items():
+        if not module.startswith("pyghostboard.agents"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            imported_private = private_names & {alias.name for alias in node.names}
+            if imported_private:
+                violations.append(f"{module}: {sorted(imported_private)}")
+    assert violations == []
+
+
 def test_public_facades_export_existing_unique_names() -> None:
     for facade in (domain_api, application_api):
         exported = facade.__all__

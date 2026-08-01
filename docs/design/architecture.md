@@ -46,13 +46,16 @@ no kind field, and private host models cannot appear in generated AI wire Schema
 `AgentPolicy` owns synchronous placement, action, and completion decisions without knowledge of
 JSON, processes, or timeouts. `AgentClient` exposes the semantic lifecycle asynchronously to the
 trusted host. `InProcessAgentClient` runs a policy directly, while `SubprocessAgent` translates the
-same calls to versioned JSON Lines messages. The shared runner validates the wire lifecycle before
-delegating to a policy.
+same calls to versioned JSON Lines messages. One lifecycle validator enforces
+`new -> initialized -> playing -> finished -> closed` across both clients and the wire runner,
+including placement, player, active-turn, legal-action, and final-outcome validation.
 
 Each policy receives an `AgentContext` containing its player, public rules, and seed. The bundled
-MCTS policy creates hypothetical snapshots only from player-safe observations and sampled opposing
-piece kinds. Fixed iteration and rollout limits make equal inputs and configuration reproducible.
-New decision strategies implement `AgentPolicy`; new transports implement `AgentClient`.
+MCTS policy asks the domain's live-position engine to construct hypotheses from player-safe
+observations and sampled opposing piece kinds; the AI layer neither imports nor fabricates private
+persistence models. Fixed iteration, rollout, and setup candidate limits make equal inputs and
+configuration reproducible. New decision strategies implement `AgentPolicy`; new transports
+implement `AgentClient`.
 
 ## Persistence
 

@@ -5,7 +5,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TextIO
 
-from pyghostboard.agents.contracts import AgentContext, AgentPolicy, PolicyFactory
+from pyghostboard.agents.contracts import (
+    AgentContext,
+    AgentLifecycle,
+    AgentPolicy,
+    PolicyFactory,
+)
 from pyghostboard.protocol import (
     ActionRequest,
     ActionResponse,
@@ -22,28 +27,33 @@ from pyghostboard.protocol import (
 def run_agent(source: Iterable[bytes], destination: TextIO, factory: PolicyFactory) -> None:
     """Serve one policy instance over the versioned wire protocol."""
     policy: AgentPolicy | None = None
+    lifecycle = AgentLifecycle()
     for line in source:
         request = request_adapter.validate_json(line)
         response: AgentResponse
         if isinstance(request, InitializeRequest):
-            if policy is not None:
-                raise RuntimeError("agent was already initialized")
-            policy = factory(
-                AgentContext(player=request.player, rules=request.rules, seed=request.seed)
-            )
+            lifecycle.require_initialization()
+            context = AgentContext(player=request.player, rules=request.rules, seed=request.seed)
+            policy = factory(context)
+            lifecycle.initialized(context)
             response = ReadyResponse(request_id=request.request_id)
         elif isinstance(request, SetupRequest):
+            lifecycle.require_placement()
+            placement = _require_policy(policy).choose_placement()
+            lifecycle.placement_chosen(placement)
             response = SetupResponse(
                 request_id=request.request_id,
-                placement=_require_policy(policy).choose_placement(),
+                placement=placement,
             )
         elif isinstance(request, ActionRequest):
+            lifecycle.require_action(request.view)
             action = _require_policy(policy).choose_action(request.view)
-            if action not in request.view.legal_actions:
-                raise RuntimeError("agent returned an illegal action")
+            lifecycle.action_chosen(request.view, action)
             response = ActionResponse(request_id=request.request_id, action=action)
         elif isinstance(request, FinishedRequest):
+            lifecycle.require_finish(request.view)
             _require_policy(policy).on_finished(request.view)
+            lifecycle.finished(request.view)
             response = ReadyResponse(request_id=request.request_id)
         else:  # pragma: no cover - exhaustive union defense
             raise RuntimeError("unsupported request")
