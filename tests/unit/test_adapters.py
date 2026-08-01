@@ -10,6 +10,8 @@ import pytest
 
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
+from pyghostboard.agents.random import RandomAgent
+from pyghostboard.agents.runtime import run_agent
 from pyghostboard.domain import GameOutcome, Match, OutcomeReason, Placement, Player, RuleSet
 from pyghostboard.protocol import (
     ActionRequest,
@@ -19,7 +21,6 @@ from pyghostboard.protocol import (
     request_adapter,
     response_adapter,
 )
-from pyghostboard.random_agent import run
 from pyghostboard.schemas import SCHEMA_NAMES, schema_path
 
 MATCH_ID = UUID("00000000-0000-0000-0000-000000000020")
@@ -43,9 +44,11 @@ def _match() -> Match:
 def test_runtime_settings_use_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PYGHOSTBOARD_AGENT_TIMEOUT", "2.5")
     monkeypatch.setenv("PYGHOSTBOARD_MAX_PLIES", "42")
+    monkeypatch.setenv("PYGHOSTBOARD_AI_ITERATIONS", "25")
     settings = RuntimeSettings()
     assert settings.agent_timeout == 2.5
     assert settings.max_plies == 42
+    assert settings.ai_iterations == 25
 
 
 def test_toml_rules_are_validated(tmp_path: Path) -> None:
@@ -154,7 +157,7 @@ def test_random_agent_handles_complete_protocol_sequence() -> None:
     )
     source = [request_adapter.dump_json(request) + b"\n" for request in requests]
     destination = StringIO()
-    run(source, destination, seed=3)
+    run_agent(source, destination, RandomAgent)
     responses = [
         response_adapter.validate_json(line) for line in destination.getvalue().splitlines()
     ]
@@ -173,7 +176,7 @@ def test_schema_paths_exist_and_unknown_names_fail() -> None:
 def test_random_agent_rejects_invalid_protocol_order() -> None:
     setup = SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000025"))
     with pytest.raises(RuntimeError, match="not initialized"):
-        run([request_adapter.dump_json(setup) + b"\n"], StringIO(), seed=0)
+        run_agent([request_adapter.dump_json(setup) + b"\n"], StringIO(), RandomAgent)
 
     initialize = InitializeRequest(
         request_id=UUID("00000000-0000-0000-0000-000000000026"),
@@ -183,4 +186,4 @@ def test_random_agent_rejects_invalid_protocol_order() -> None:
     )
     source = [request_adapter.dump_json(initialize) + b"\n"] * 2
     with pytest.raises(RuntimeError, match="already initialized"):
-        run(source, StringIO(), seed=0)
+        run_agent(source, StringIO(), RandomAgent)

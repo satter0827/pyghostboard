@@ -69,10 +69,12 @@ def _layer(module: str) -> int | None:
         return 1
     if module == "pyghostboard.protocol":
         return 1
+    if module == "pyghostboard.agents" or module.startswith("pyghostboard.agents."):
+        return 2
     if module == "pyghostboard.adapters" or module.startswith("pyghostboard.adapters."):
         return 2
-    if module == "pyghostboard.random_agent":
-        return 2
+    if module in {"pyghostboard.mcts_agent", "pyghostboard.random_agent"}:
+        return 3
     if module == "pyghostboard.cli":
         return 3
     return None

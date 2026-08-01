@@ -19,6 +19,18 @@ projection. Database adapters should serialize with the versioned domain codecs 
 `Match.restore()` when reading so persisted invariants are checked again. Keep database libraries
 outside `domain` and inject the store into the service.
 
+## AI policies
+
+Implement `AgentPolicy` from `pyghostboard.agents` to add an in-process AI. Construct the policy
+from `AgentContext`, return a complete legal `Placement`, choose only from
+`PlayerView.legal_actions`, and accept the final view in `on_finished`. Use
+`InProcessAgentClient` when the policy may run in the trusted host.
+
+Use the versioned JSON Lines protocol when process isolation is required. `SubprocessAgent`
+implements the same asynchronous `AgentClient` lifecycle and hides wire messages from gameplay
+code. An external implementation can use any language as long as it follows the schemas described
+in `docs/ai-protocol.md`.
+
 ## Logging and records
 
 Inject an `EventLogger` compatible logger into `MatchService`. The application logs only projected

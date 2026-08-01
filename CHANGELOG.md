@@ -6,7 +6,8 @@
 - Add player-specific observations that structurally omit opposing ghost kinds.
 - Add async persistence ports, optimistic commits, public event projection, and private JSON Lines
   records with build provenance.
-- Add an isolated JSON Lines AI protocol, reproducible bundled random AI, and bounded process I/O.
+- Add transport-independent AI contracts, reproducible random and information-set MCTS policies,
+  an isolated JSON Lines adapter, and bounded process I/O.
 - Add Rich commands for play, replay, and rule validation.
 - Add versioned JSON Schema documents, typed distributions, compatibility CI, and exact-version
   release artifacts without registry publication.

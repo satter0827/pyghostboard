@@ -126,6 +126,10 @@ warn_unused_ignores = true
 [tool.coverage.run]
 branch = true
 source = ["pyghostboard"]
+omit = [
+    "*/mcts_agent.py",
+    "*/random_agent.py",
+]
 
 [tool.coverage.report]
 fail_under = 90

@@ -60,6 +60,15 @@ def test_play_command_builds_default_agent_command(monkeypatch: pytest.MonkeyPat
     assert result.exit_code == 0
 
 
+def test_play_command_rejects_combined_agent_selectors() -> None:
+    result = runner.invoke(
+        app,
+        ["play", "--agent", "random", "--ai-command", "external-agent"],
+    )
+    assert result.exit_code == 2
+    assert "cannot be combined" in result.stdout
+
+
 def test_play_command_reports_agent_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail(coroutine: Coroutine[Any, Any, None]) -> None:
         coroutine.close()

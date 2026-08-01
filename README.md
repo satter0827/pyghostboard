@@ -25,12 +25,13 @@ The project prepares standard wheel and source archives but does not publish the
 registry. A `vX.Y.Z` tag on the current `main` commit builds an exact-version artifact in GitHub
 Actions.
 
-The bundled random AI runs in a separate process and receives only the information visible to its
-player. Use `pyghostboard --help` for recording, replay, and rule validation options. External AI
-commands are passed as repeated arguments without a shell, for example:
+The bundled MCTS AI runs by default in a separate process and receives only the information visible
+to its player. Select the reproducible baseline with `--agent random`. Use `pyghostboard --help`
+for recording, replay, and rule validation options. External AI commands are passed as repeated
+arguments without a shell, for example:
 
 ```shell
-pyghostboard play --ai python --ai /path/to/agent.py
+pyghostboard play --ai-command python --ai-command /path/to/agent.py
 ```
 
 Private records contain both players' ghost kinds and placements. Protect them as secrets. Existing
@@ -64,8 +65,10 @@ format. `RuleSet` customization is data-only: board dimensions, starting areas, 
 movement vectors, piece counts, and a subset of the three built-in victory conditions.
 
 Runtime limits are externally configurable with the `PYGHOSTBOARD_` prefix. The available names
-are `LOG_LEVEL`, `AGENT_TIMEOUT`, `AGENT_MAX_MESSAGE_BYTES`, `AGENT_MAX_STDERR_BYTES`, and
-`MAX_PLIES`. For example, `PYGHOSTBOARD_AGENT_TIMEOUT=5` changes the AI response deadline.
+include `LOG_LEVEL`, `AGENT_TIMEOUT`, `AGENT_MAX_MESSAGE_BYTES`, `AGENT_MAX_STDERR_BYTES`,
+`MAX_PLIES`, `AI_ITERATIONS`, `AI_EXPLORATION_WEIGHT`, `AI_ROLLOUT_PLIES`, and
+`AI_SETUP_CANDIDATE_LIMIT`. For example, `PYGHOSTBOARD_AI_ITERATIONS=2000` increases the
+deterministic MCTS search budget.
 
 ## Development
 
