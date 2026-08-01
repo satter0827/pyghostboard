@@ -34,6 +34,18 @@ minimum evidence needed for investigation, and follow the [security policy](../.
 Repository automation cannot determine external storage permissions or exposure impact; a human
 owner performs and records that assessment.
 
+## Arena results
+
+Create every arena run at a new path. The command refuses an existing output directory and does not
+offer resume or overwrite in schema 0.1.0. The root and `matches` directory use mode `0700`;
+manifest, results, and private records use mode `0600`. A `completed` manifest means every planned
+attempt has one durable result, including failures. An `interrupted` manifest may be analyzed but
+should not be treated as the planned sample size.
+
+`results.jsonl` is safe only for the same trusted user as the private match directory because error
+details can describe local commands or process behavior. Move or archive the directory as one
+private unit; do not publish `matches` files with aggregate statistics.
+
 ## Release artifacts
 
 GitHub Actions retains verified wheel and source archives. A maintainer confirms that the tag SHA

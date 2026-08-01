@@ -11,6 +11,7 @@ CUI ───────────────┐
 External app ──────┼──> Adapters ──> Application ──> Domain
                    └──> PlayerController ──> AgentPolicy ──> PlayerView
 AI process <────────── JSON Lines adapter ────────────────┘
+Arena files <───────── private result adapter
 ```
 
 Dependencies point inward:
@@ -65,6 +66,18 @@ observations and sampled opposing piece kinds; the AI layer neither imports nor 
 persistence models. Fixed iteration, rollout, and setup candidate limits make equal inputs and
 configuration reproducible. New decision strategies implement `AgentPolicy`; input transports
 implement `PlayerController`.
+
+## AI experiment execution
+
+The application layer validates the complete `ArenaConfig`, derives per-agent seeds, creates paired
+side-swapped `ArenaMatchPlan` values, and computes descriptive `ArenaAnalysis` values. It performs no
+file or process I/O. The CLI constructs subprocess controllers and uses `MatchRunner` for every
+game; arena rules never fork into a second match engine.
+
+The arena adapter owns a new private directory, atomically replaces `manifest.json`, appends and
+syncs one `ArenaMatchResult` line after each attempt, and reuses `MatchRecorder` destinations for
+complete private games. Unexpected host failure changes the manifest to `interrupted`; an expected
+AI failure becomes one failed result and does not promote a partial match record.
 
 ## Persistence
 

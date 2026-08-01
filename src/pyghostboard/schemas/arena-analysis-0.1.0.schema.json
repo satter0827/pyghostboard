@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "AgentAnalysis": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_id": {
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "games": {
+          "minimum": 0,
+          "title": "Games",
+          "type": "integer"
+        },
+        "player_one_games": {
+          "minimum": 0,
+          "title": "Player One Games",
+          "type": "integer"
+        },
+        "player_one_win_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Player One Win Rate",
+          "type": "number"
+        },
+        "player_one_wins": {
+          "minimum": 0,
+          "title": "Player One Wins",
+          "type": "integer"
+        },
+        "player_two_games": {
+          "minimum": 0,
+          "title": "Player Two Games",
+          "type": "integer"
+        },
+        "player_two_win_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Player Two Win Rate",
+          "type": "number"
+        },
+        "player_two_wins": {
+          "minimum": 0,
+          "title": "Player Two Wins",
+          "type": "integer"
+        },
+        "win_rate": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Win Rate",
+          "type": "number"
+        },
+        "wins": {
+          "minimum": 0,
+          "title": "Wins",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "agent_id",
+        "games",
+        "wins",
+        "win_rate",
+        "player_one_games",
+        "player_one_wins",
+        "player_one_win_rate",
+        "player_two_games",
+        "player_two_wins",
+        "player_two_win_rate"
+      ],
+      "title": "AgentAnalysis",
+      "type": "object"
+    },
+    "OutcomeReason": {
+      "enum": [
+        "escape",
+        "capture_good",
+        "sacrifice_bad"
+      ],
+      "title": "OutcomeReason",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-analysis-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Versioned descriptive statistics without significance claims.",
+  "properties": {
+    "agents": {
+      "items": {
+        "$ref": "#/$defs/AgentAnalysis"
+      },
+      "title": "Agents",
+      "type": "array"
+    },
+    "attempted_matches": {
+      "minimum": 0,
+      "title": "Attempted Matches",
+      "type": "integer"
+    },
+    "average_plies": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Average Plies"
+    },
+    "completed_matches": {
+      "minimum": 0,
+      "title": "Completed Matches",
+      "type": "integer"
+    },
+    "failed_matches": {
+      "minimum": 0,
+      "title": "Failed Matches",
+      "type": "integer"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "player_one_win_rate": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Player One Win Rate",
+      "type": "number"
+    },
+    "player_one_wins": {
+      "minimum": 0,
+      "title": "Player One Wins",
+      "type": "integer"
+    },
+    "player_two_win_rate": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Player Two Win Rate",
+      "type": "number"
+    },
+    "player_two_wins": {
+      "minimum": 0,
+      "title": "Player Two Wins",
+      "type": "integer"
+    },
+    "victory_reasons": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/OutcomeReason"
+      },
+      "title": "Victory Reasons",
+      "type": "object"
+    }
+  },
+  "required": [
+    "attempted_matches",
+    "completed_matches",
+    "failed_matches",
+    "agents",
+    "player_one_wins",
+    "player_one_win_rate",
+    "player_two_wins",
+    "player_two_win_rate",
+    "victory_reasons"
+  ],
+  "title": "ArenaAnalysis",
+  "type": "object"
+}

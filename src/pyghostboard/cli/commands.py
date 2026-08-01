@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import time
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
@@ -13,19 +14,28 @@ import structlog
 import typer
 from rich.console import Console
 from rich.prompt import Prompt
+from rich.table import Table
 from typer import _click
 from typer.core import TyperCommand, TyperGroup, TyperOption
 
 from pyghostboard._platform import require_posix
 from pyghostboard.adapters.ai import SubprocessAgentController
+from pyghostboard.adapters.arena import load_arena_config
 from pyghostboard.adapters.config import RuntimeSettings
 from pyghostboard.adapters.recording import MatchRecorder, read_record
+from pyghostboard.application.arena import ArenaAnalysis
 from pyghostboard.application.runner import MatchResult, MatchRunner, MatchSpec, PlayerContext
 from pyghostboard.application.service import (
     InMemoryMatchStore,
     MatchAborted,
     MatchService,
     project_player_events,
+)
+from pyghostboard.cli.arena import (
+    analyze_directory,
+    check_external_agent,
+    run_arena,
+    watch_match,
 )
 from pyghostboard.cli.config import resolve_agent_command, resolve_rules
 from pyghostboard.cli.display import MatchDisplay, player_name, reason_name, supports_live
@@ -41,6 +51,11 @@ from pyghostboard.domain.models import (
     PlayerView,
     RuleSet,
 )
+
+
+class AnalysisFormat(StrEnum):
+    TABLE = "table"
+    JSON = "json"
 
 
 class LocalizedCommand(TyperCommand):
@@ -91,7 +106,14 @@ def create_app(language: str, *, console: Console | None = None) -> typer.Typer:
         add_completion=False,
         cls=LocalizedGroup,
     )
+    agent_app = typer.Typer(
+        help=tr("Validate external AI implementations."),
+        no_args_is_help=True,
+        add_completion=False,
+        cls=LocalizedGroup,
+    )
     app.add_typer(rules_app, name="rules")
+    app.add_typer(agent_app, name="agent")
 
     @app.callback()
     def root(
@@ -197,6 +219,89 @@ def create_app(language: str, *, console: Console | None = None) -> typer.Typer:
             replay_match(record, view, step=step, delay=delay, console=output)
         except (OSError, ValueError) as error:
             raise typer.BadParameter(str(error)) from error
+
+    @app.command(help=tr("Watch one AI match from one configured viewpoint."), cls=LocalizedCommand)
+    def watch(
+        config: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    ) -> None:
+        try:
+            require_posix("command-line interface")
+            asyncio.run(watch_match(load_arena_config(config), output))
+        except MatchAborted as error:
+            output.print(
+                tr("Match aborted ({reason}): {detail}").format(
+                    reason=error.reason.value, detail=error
+                )
+            )
+            raise typer.Exit(code=1) from error
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+
+    @app.command(help=tr("Run a deterministic AI arena."), cls=LocalizedCommand)
+    def arena(
+        config: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+        output_directory: Annotated[
+            Path,
+            typer.Option("--output", help=tr("New private result directory.")),
+        ],
+    ) -> None:
+        try:
+            require_posix("command-line interface")
+            manifest = asyncio.run(run_arena(load_arena_config(config), output_directory))
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+        output.print(
+            tr("Arena completed: {completed} completed, {failed} failed").format(
+                completed=manifest.completed_matches,
+                failed=manifest.failed_matches,
+            )
+        )
+
+    @app.command(help=tr("Analyze descriptive arena results."), cls=LocalizedCommand)
+    def analyze(
+        results: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
+        output_format: Annotated[
+            AnalysisFormat,
+            typer.Option("--format", help=tr("Output format: table or json.")),
+        ] = AnalysisFormat.TABLE,
+    ) -> None:
+        try:
+            analysis = analyze_directory(results)
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+        if output_format is AnalysisFormat.JSON:
+            output.file.write(analysis.model_dump_json(indent=2) + "\n")
+            output.file.flush()
+            return
+        _render_analysis(output, analysis)
+
+    @agent_app.command(
+        "check", help=tr("Validate an external AI through one full match."), cls=LocalizedCommand
+    )
+    def agent_check(
+        command: Annotated[
+            list[str] | None,
+            typer.Option(
+                "--command",
+                help=tr("External AI argument; repeat once for each argument."),
+            ),
+        ] = None,
+    ) -> None:
+        if not command:
+            raise typer.BadParameter(tr("at least one --command argument is required"))
+        try:
+            require_posix("command-line interface")
+            asyncio.run(check_external_agent(command, RuntimeSettings()))
+        except MatchAborted as error:
+            output.print(
+                tr("Agent check failed ({reason}): {detail}").format(
+                    reason=error.reason.value, detail=error
+                )
+            )
+            raise typer.Exit(code=1) from error
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+        output.print(tr("Agent completed a full match successfully."))
 
     @rules_app.command("validate", help=tr("Validate a TOML RuleSet."), cls=LocalizedCommand)
     def validate_rules(
@@ -339,6 +444,44 @@ def render_result(console: Console, result: MatchResult) -> None:
             reason=reason_name(result.outcome.reason.value),
         )
     )
+
+
+def _render_analysis(console: Console, analysis: ArenaAnalysis) -> None:
+    summary = Table(title=tr("Arena summary"))
+    summary.add_column(tr("Metric"))
+    summary.add_column(tr("Value"), justify="right")
+    summary.add_row(tr("Completed"), str(analysis.completed_matches))
+    summary.add_row(tr("Failed"), str(analysis.failed_matches))
+    summary.add_row(tr("Player one win rate"), f"{analysis.player_one_win_rate:.1%}")
+    summary.add_row(tr("Player two win rate"), f"{analysis.player_two_win_rate:.1%}")
+    summary.add_row(
+        tr("Average plies"),
+        f"{analysis.average_plies:.1f}" if analysis.average_plies is not None else tr("none"),
+    )
+    console.print(summary)
+    agents = Table(title=tr("AI results"))
+    agents.add_column(tr("AI"))
+    agents.add_column(tr("Games"), justify="right")
+    agents.add_column(tr("Wins"), justify="right")
+    agents.add_column(tr("Win rate"), justify="right")
+    agents.add_column(tr("As player one"), justify="right")
+    agents.add_column(tr("As player two"), justify="right")
+    for row in analysis.agents:
+        agents.add_row(
+            row.agent_id,
+            str(row.games),
+            str(row.wins),
+            f"{row.win_rate:.1%}",
+            f"{row.player_one_win_rate:.1%}",
+            f"{row.player_two_win_rate:.1%}",
+        )
+    console.print(agents)
+    reasons = Table(title=tr("Victory reasons"))
+    reasons.add_column(tr("Reason"))
+    reasons.add_column(tr("Count"), justify="right")
+    for reason, count in analysis.victory_reasons.items():
+        reasons.add_row(reason.value, str(count))
+    console.print(reasons)
 
 
 def _configure_logging(level: str) -> None:

@@ -15,7 +15,11 @@ use UTF-8 and reject unknown fields or unsupported format versions.
 The installed `pyghostboard` command provides:
 
 - `play` for a local human-versus-AI match;
+- `watch` for one configured AI match from one player viewpoint;
+- `arena` for a new deterministic private result directory;
 - `replay` for reading a private record;
+- `analyze` for descriptive table or JSON output;
+- `agent check` for a complete external-AI lifecycle;
 - `rules validate` for validating a TOML rule file.
 
 `play` is human-versus-AI only and selects MCTS by default. `--agent` selects one bundled policy;
@@ -92,6 +96,16 @@ Bundled JSON Schema Draft 2020-12 documents define the normative wire shapes for
 events, records, AI requests, and AI responses. Each Schema has a versioned identifier and forbids
 unrecognized fields. Schema generation is deterministic and CI rejects an uncommitted generated
 diff.
+
+Arena manifest, match result, and analysis documents use schema version 0.1.0. `manifest.json`
+contains `running`, `completed`, or `interrupted` state and durable counters. `results.jsonl`
+contains one completed or failed attempt per line. Successful `matches/NNNNNN.jsonl` files use the
+existing private record format; complete state is not duplicated in another arena format.
+
+An arena TOML document declares exactly two uniquely identified agents, a watch agent, rounds, root
+seed, a complete `RuleSet`, MCTS search settings, and process and match limits. Each round schedules
+two games with the agents swapped between player one and player two. An agent seed is the unsigned
+64-bit prefix of SHA-256 over root seed, round, and agent identifier.
 
 ## Records and logs
 

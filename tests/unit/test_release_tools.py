@@ -25,6 +25,9 @@ def _write_archives(directory: Path, version: str, commit: str = "a" * 40) -> No
             "pyghostboard/locale/pyghostboard.pot",
             "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.po",
             "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.mo",
+            "pyghostboard/schemas/arena-analysis-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-result-0.1.0.schema.json",
         ):
             archive.writestr(path, b"catalog")
     package_info = directory / "PKG-INFO"
@@ -59,18 +62,25 @@ def test_release_verifier_rejects_wrong_build_provenance(tmp_path: Path) -> None
         verify_distribution(tmp_path, "0.1.0", "b" * 40)
 
 
-def test_release_verifier_rejects_missing_translation_catalog(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "missing",
+    [
+        "pyghostboard/locale/pyghostboard.pot",
+        "pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
+    ],
+)
+def test_release_verifier_rejects_missing_package_data(tmp_path: Path, missing: str) -> None:
     _write_archives(tmp_path, "0.1.0")
     wheel = tmp_path / "pyghostboard-0.1.0-py3-none-any.whl"
     # Rebuild without one required member because ZipFile cannot delete in place.
     replacement = tmp_path / "replacement.whl"
     with zipfile.ZipFile(wheel) as source, zipfile.ZipFile(replacement, "w") as target:
         for name in source.namelist():
-            if name != "pyghostboard/locale/pyghostboard.pot":
+            if name != missing:
                 target.writestr(name, source.read(name))
     replacement.replace(wheel)
 
-    with pytest.raises(ValueError, match="translation catalogs"):
+    with pytest.raises(ValueError, match="required package data"):
         verify_distribution(tmp_path, "0.1.0")
 
 

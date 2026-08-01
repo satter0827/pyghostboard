@@ -35,6 +35,12 @@ integrating an external process, and local players using the CUI.
   distribution and source provenance without silently replacing an existing destination.
 - **FR-009 — Public formats:** Consumers can validate rules, snapshots, events, records, and AI
   messages against bundled versioned JSON Schemas.
+- **FR-010 — AI experiments:** A TOML configuration runs paired side-swapped AI matches from
+  deterministically derived seeds, watches one configured player view, validates one external AI
+  through a complete match, and saves each arena attempt incrementally.
+- **FR-011 — Descriptive analysis:** A completed or interrupted arena directory reports completed
+  and failed attempts, AI and side win rates, victory reasons, and average plies as a table or
+  versioned JSON without claiming statistical significance.
 
 ## Quality requirements
 
@@ -58,12 +64,15 @@ integrating an external process, and local players using the CUI.
 - **QR-008 — Verifiable change:** Formatting, linting, strict typing, dependency direction, tests,
   Schema and translation generation, packaging, compatibility, and dependency auditing gate
   integration.
+- **QR-009 — Private experiment output:** A new arena output directory uses mode `0700`; result,
+  manifest, and match files use mode `0600`. Existing output is never overwritten, each result is
+  durable before the next match, and interruption is visible in the manifest.
 
 ## Release scope
 
 The 0.1 series supports local human-versus-AI play, reusable domain, application, and agent APIs,
 bundled random and information-set MCTS policies, an in-memory store, private recording, replay,
-configurable rules, and external AI processes.
+configurable rules, external AI processes, deterministic AI arenas, and descriptive analysis.
 
 The series does not provide a GUI, network play, matchmaking, accounts, a production database
 adapter, or publication to a package registry.

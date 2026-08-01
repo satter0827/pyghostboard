@@ -21,10 +21,42 @@ msgstr ""
 msgid "; captured {kind}"
 msgstr ""
 
+msgid "AI"
+msgstr ""
+
+msgid "AI results"
+msgstr ""
+
 msgid "Aborted."
 msgstr ""
 
+#, python-brace-format
+msgid "Agent check failed ({reason}): {detail}"
+msgstr ""
+
+msgid "Agent completed a full match successfully."
+msgstr ""
+
+msgid "Analyze descriptive arena results."
+msgstr ""
+
+#, python-brace-format
+msgid "Arena completed: {completed} completed, {failed} failed"
+msgstr ""
+
+msgid "Arena summary"
+msgstr ""
+
 msgid "Arguments"
+msgstr ""
+
+msgid "As player one"
+msgstr ""
+
+msgid "As player two"
+msgstr ""
+
+msgid "Average plies"
 msgstr ""
 
 msgid "Board"
@@ -53,6 +85,12 @@ msgstr ""
 msgid "Commands"
 msgstr ""
 
+msgid "Completed"
+msgstr ""
+
+msgid "Count"
+msgstr ""
+
 msgid "Display language: en or ja."
 msgstr ""
 
@@ -60,6 +98,12 @@ msgid "Error"
 msgstr ""
 
 msgid "External AI argument; repeat once for each argument."
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+msgid "Games"
 msgstr ""
 
 #, python-brace-format
@@ -80,13 +124,22 @@ msgstr ""
 msgid "Match aborted ({reason}): {detail}"
 msgstr ""
 
+msgid "Metric"
+msgstr ""
+
 msgid "Missing argument"
 msgstr ""
 
 msgid "Missing option"
 msgstr ""
 
+msgid "New private result directory."
+msgstr ""
+
 msgid "Options"
+msgstr ""
+
+msgid "Output format: table or json."
 msgstr ""
 
 msgid "Play and inspect pyghostboard matches."
@@ -98,7 +151,13 @@ msgstr ""
 msgid "Player one"
 msgstr ""
 
+msgid "Player one win rate"
+msgstr ""
+
 msgid "Player two"
+msgstr ""
+
+msgid "Player two win rate"
 msgstr ""
 
 msgid "Player viewpoint used for replay."
@@ -108,6 +167,9 @@ msgid "Preparing match..."
 msgstr ""
 
 msgid "Press Enter for the next move"
+msgstr ""
+
+msgid "Reason"
 msgstr ""
 
 #, python-brace-format
@@ -122,6 +184,9 @@ msgstr ""
 
 #, python-brace-format
 msgid "Replayed {plies} ply"
+msgstr ""
+
+msgid "Run a deterministic AI arena."
 msgstr ""
 
 msgid "Save the private match record."
@@ -157,14 +222,35 @@ msgstr ""
 msgid "Validate a TOML RuleSet."
 msgstr ""
 
+msgid "Validate an external AI through one full match."
+msgstr ""
+
+msgid "Validate external AI implementations."
+msgstr ""
+
 msgid "Validate game rule files."
+msgstr ""
+
+msgid "Value"
+msgstr ""
+
+msgid "Victory reasons"
 msgstr ""
 
 msgid "Wait for input after each move."
 msgstr ""
 
+msgid "Watch one AI match from one configured viewpoint."
+msgstr ""
+
+msgid "Win rate"
+msgstr ""
+
 #, python-brace-format
 msgid "Winner: {player} · Reason: {reason}"
+msgstr ""
+
+msgid "Wins"
 msgstr ""
 
 #, python-brace-format
@@ -176,6 +262,9 @@ msgid "[env var: {}]"
 msgstr ""
 
 msgid "[required]"
+msgstr ""
+
+msgid "at least one --command argument is required"
 msgstr ""
 
 msgid "bad ghost"
