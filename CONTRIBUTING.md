@@ -35,7 +35,9 @@ git merge --no-edit origin/develop
 Short-lived pull requests are squash-merged into `develop`. Releases merge `develop` into `main`
 with a merge commit. Pull requests to `main` from any other branch are rejected. A release pull
 request requires approval from at least one reviewer other than its author, and a human maintainer
-performs the merge. New commits dismiss an existing approval.
+performs the merge. New commits dismiss an existing approval. Do not merge `main` back into
+`develop` after a release; main pull-request checks validate GitHub's test merge against the current
+main revision.
 
 ## Verification
 
