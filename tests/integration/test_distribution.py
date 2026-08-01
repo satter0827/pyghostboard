@@ -10,6 +10,10 @@ import pyghostboard
 from pyghostboard.schemas import SCHEMA_NAMES
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+DESIGN_DOCUMENTS = {
+    path.relative_to(REPOSITORY_ROOT).as_posix()
+    for path in (REPOSITORY_ROOT / "docs" / "design").glob("*.md")
+}
 
 
 def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
@@ -44,7 +48,11 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
     assert any(name.endswith(".dist-info/entry_points.txt") for name in wheel_files)
 
     with tarfile.open(source_distribution, mode="r:gz") as archive:
-        source_files = {Path(name).name for name in archive.getnames()}
+        source_files: set[str] = set()
+        for name in archive.getnames():
+            path = Path(name)
+            if len(path.parts) > 1:
+                source_files.add(Path(*path.parts[1:]).as_posix())
 
     assert {
         "CHANGELOG.md",
@@ -53,9 +61,9 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
         "README.ja.md",
         "README.md",
         "SECURITY.md",
-        "ai-protocol.md",
-        "architecture.md",
-        "integration.md",
+        "docs/README.md",
         "pyproject.toml",
-        "rules.toml",
+        "examples/rules.toml",
     } <= source_files
+    assert source_files >= DESIGN_DOCUMENTS
+    assert not any(name.startswith("docs/notes/") for name in source_files)

@@ -1,0 +1,56 @@
+# Operations
+
+## Operating model
+
+pyghostboard is a local Python package and process, not a hosted service. Operations cover
+installation, configuration, AI subprocess handling, private record custody, release-artifact
+retention, support, and retirement. Service monitoring, backups, accounts, and production database
+operation remain outside the 0.1 series.
+
+## Installation and configuration
+
+Install a verified wheel or a source checkout on a supported Python and platform combination.
+Validate custom rules before starting a match. Supply runtime limits through documented
+`PYGHOSTBOARD_` environment variables and keep secrets out of rule files and command arguments.
+
+## Match failures
+
+The host reports typed failures for invalid rules, illegal actions, missing matches, revision
+conflicts, AI protocol violations, timeouts, abnormal exits, and maximum plies. An aborted match
+does not promote its temporary private record. Retry only after correcting configuration or
+replacing the failed AI; do not treat partial output as a valid replay.
+
+## Logs and private records
+
+Diagnostic logs contain public event projections and operational failures. Private records contain
+both players' hidden information and require secret-file handling. Store records only at an
+explicit destination with directory permissions appropriate for the host user. Use explicit
+overwrite only when replacement is intended.
+
+If record confidentiality may have been lost, restrict access to the affected file, preserve the
+minimum evidence needed for investigation, and follow the [security policy](../../SECURITY.md).
+Repository automation cannot determine external storage permissions or exposure impact; a human
+owner performs and records that assessment.
+
+## Release artifacts
+
+GitHub Actions retains verified wheel and source archives. A maintainer confirms that the tag SHA
+equals the current main SHA, the Release Artifact workflow succeeded, and the artifact contains the
+expected two archives before treating the version as released. Artifact retention duration and
+download access depend on repository settings and require periodic human review.
+
+## Support and security
+
+The latest `0.1.x` source release and latest `main` revision receive security fixes. Vulnerabilities
+use GitHub private vulnerability reporting and never public issues or pull requests. A human
+maintainer evaluates impact, coordinates remediation and disclosure, and records the supported
+version in the security policy.
+
+## Deprecation and retirement
+
+An incompatible Python API or wire-format change documents its replacement and affected versions
+before release. Versioned persisted data and protocol formats are not silently reinterpreted.
+
+Retiring a version requires a changelog entry, an updated security support statement, and a clear
+replacement or end-of-support notice. Removing retained artifacts or private records is a manual,
+destructive operation performed only by their owner under the applicable retention policy.
