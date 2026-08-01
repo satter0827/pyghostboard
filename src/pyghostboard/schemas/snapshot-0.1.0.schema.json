@@ -1,0 +1,319 @@
+{
+  "$defs": {
+    "Exit": {
+      "additionalProperties": false,
+      "properties": {
+        "square": {
+          "$ref": "#/$defs/Square"
+        }
+      },
+      "required": [
+        "square"
+      ],
+      "title": "Exit",
+      "type": "object"
+    },
+    "GameOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "$ref": "#/$defs/OutcomeReason"
+        },
+        "winner": {
+          "$ref": "#/$defs/Player"
+        }
+      },
+      "required": [
+        "winner",
+        "reason"
+      ],
+      "title": "GameOutcome",
+      "type": "object"
+    },
+    "GhostKind": {
+      "enum": [
+        "good",
+        "bad"
+      ],
+      "title": "GhostKind",
+      "type": "string"
+    },
+    "OutcomeReason": {
+      "enum": [
+        "escape",
+        "capture_good",
+        "sacrifice_bad"
+      ],
+      "title": "OutcomeReason",
+      "type": "string"
+    },
+    "Player": {
+      "enum": [
+        "one",
+        "two"
+      ],
+      "title": "Player",
+      "type": "string"
+    },
+    "PrivatePiece": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/GhostKind"
+        },
+        "owner": {
+          "$ref": "#/$defs/Player"
+        },
+        "removal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RemovalReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "removed_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Square"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "square": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Square"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "owner",
+        "kind",
+        "square"
+      ],
+      "title": "PrivatePiece",
+      "type": "object"
+    },
+    "RemovalReason": {
+      "enum": [
+        "captured",
+        "escaped"
+      ],
+      "title": "RemovalReason",
+      "type": "string"
+    },
+    "RuleSet": {
+      "additionalProperties": false,
+      "properties": {
+        "bad_count": {
+          "minimum": 1,
+          "title": "Bad Count",
+          "type": "integer"
+        },
+        "format_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Format Version",
+          "type": "string"
+        },
+        "good_count": {
+          "minimum": 1,
+          "title": "Good Count",
+          "type": "integer"
+        },
+        "height": {
+          "maximum": 26,
+          "minimum": 2,
+          "title": "Height",
+          "type": "integer"
+        },
+        "movement": {
+          "items": {
+            "$ref": "#/$defs/Vector"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Movement",
+          "type": "array"
+        },
+        "player_one_exits": {
+          "items": {
+            "$ref": "#/$defs/Exit"
+          },
+          "title": "Player One Exits",
+          "type": "array"
+        },
+        "player_one_start": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Player One Start",
+          "type": "array"
+        },
+        "player_two_exits": {
+          "items": {
+            "$ref": "#/$defs/Exit"
+          },
+          "title": "Player Two Exits",
+          "type": "array"
+        },
+        "player_two_start": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Player Two Start",
+          "type": "array"
+        },
+        "victory_conditions": {
+          "default": [
+            "escape",
+            "capture_good",
+            "sacrifice_bad"
+          ],
+          "items": {
+            "$ref": "#/$defs/OutcomeReason"
+          },
+          "title": "Victory Conditions",
+          "type": "array"
+        },
+        "width": {
+          "maximum": 26,
+          "minimum": 2,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "good_count",
+        "bad_count",
+        "player_one_start",
+        "player_two_start",
+        "player_one_exits",
+        "player_two_exits",
+        "movement"
+      ],
+      "title": "RuleSet",
+      "type": "object"
+    },
+    "Square": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Square",
+      "type": "object"
+    },
+    "Vector": {
+      "additionalProperties": false,
+      "properties": {
+        "dx": {
+          "title": "Dx",
+          "type": "integer"
+        },
+        "dy": {
+          "title": "Dy",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dx",
+        "dy"
+      ],
+      "title": "Vector",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/snapshot-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "current_player": {
+      "$ref": "#/$defs/Player"
+    },
+    "first_player": {
+      "$ref": "#/$defs/Player"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "match_id": {
+      "format": "uuid",
+      "title": "Match Id",
+      "type": "string"
+    },
+    "outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GameOutcome"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "pieces": {
+      "items": {
+        "$ref": "#/$defs/PrivatePiece"
+      },
+      "title": "Pieces",
+      "type": "array"
+    },
+    "revision": {
+      "minimum": 0,
+      "title": "Revision",
+      "type": "integer"
+    },
+    "rules": {
+      "$ref": "#/$defs/RuleSet"
+    }
+  },
+  "required": [
+    "match_id",
+    "revision",
+    "rules",
+    "first_player",
+    "current_player",
+    "pieces"
+  ],
+  "title": "PrivateMatchSnapshot",
+  "type": "object"
+}

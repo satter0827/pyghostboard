@@ -39,6 +39,10 @@ through GitHub; automated agents do not merge pull requests to `main`. Do not me
 `develop` after a release. Main pull-request checks validate GitHub's test merge against the current
 main revision.
 
+After main push CI succeeds, a maintainer may tag that exact commit with `vX.Y.Z`. The tag workflow
+builds and verifies wheel and source archives and retains them as Actions artifacts. This repository
+does not publish distributions to PyPI, TestPyPI, or another package registry.
+
 ## Verification
 
 Run the fast checks while implementing:
@@ -47,6 +51,8 @@ Run the fast checks while implementing:
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy
+uv run lint-imports
+uv run pytest tests/structure
 uv run pytest tests/unit
 ```
 
@@ -64,6 +70,9 @@ uv audit --locked --preview-features audit-command
 
 `uv audit` contacts the configured vulnerability service. A network failure is an environment
 failure, not evidence that dependencies are safe.
+
+Run `uv run python tools/generate_schemas.py` after changing a public JSON model and include the
+generated schema changes in the same pull request.
 
 ## Test boundaries
 

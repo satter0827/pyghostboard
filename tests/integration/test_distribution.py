@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 import pyghostboard
+from pyghostboard.schemas import SCHEMA_NAMES
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,8 +40,22 @@ def test_distribution_contains_required_public_files(tmp_path: Path) -> None:
 
     assert "pyghostboard/__init__.py" in wheel_files
     assert "pyghostboard/py.typed" in wheel_files
+    assert {f"pyghostboard/schemas/{name}" for name in SCHEMA_NAMES} <= wheel_files
+    assert any(name.endswith(".dist-info/entry_points.txt") for name in wheel_files)
 
     with tarfile.open(source_distribution, mode="r:gz") as archive:
         source_files = {Path(name).name for name in archive.getnames()}
 
-    assert {"LICENSE", "README.md", "pyproject.toml"} <= source_files
+    assert {
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "README.ja.md",
+        "README.md",
+        "SECURITY.md",
+        "ai-protocol.md",
+        "architecture.md",
+        "integration.md",
+        "pyproject.toml",
+        "rules.toml",
+    } <= source_files

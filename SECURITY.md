@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-pyghostboard has not published a stable release. Security fixes are applied to the latest revision
-of `main` and included in the next release.
+Security fixes are applied to the latest `0.1.x` source release and the latest revision of `main`.
+Distributions are retained as repository build artifacts and are not published to a package
+registry.
 
 ## Reporting a vulnerability
 
