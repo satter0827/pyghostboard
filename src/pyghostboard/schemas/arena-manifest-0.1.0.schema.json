@@ -1,0 +1,84 @@
+{
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Atomically replaced progress marker for one private result directory.",
+  "properties": {
+    "agent_ids": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Agent Ids",
+      "type": "array"
+    },
+    "completed_matches": {
+      "minimum": 0,
+      "title": "Completed Matches",
+      "type": "integer"
+    },
+    "failed_matches": {
+      "minimum": 0,
+      "title": "Failed Matches",
+      "type": "integer"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "matches_directory": {
+      "const": "matches",
+      "default": "matches",
+      "title": "Matches Directory",
+      "type": "string"
+    },
+    "planned_matches": {
+      "minimum": 2,
+      "title": "Planned Matches",
+      "type": "integer"
+    },
+    "results_file": {
+      "const": "results.jsonl",
+      "default": "results.jsonl",
+      "title": "Results File",
+      "type": "string"
+    },
+    "root_seed": {
+      "title": "Root Seed",
+      "type": "integer"
+    },
+    "rounds": {
+      "minimum": 1,
+      "title": "Rounds",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "interrupted"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "root_seed",
+    "rounds",
+    "agent_ids",
+    "planned_matches",
+    "completed_matches",
+    "failed_matches"
+  ],
+  "title": "ArenaManifest",
+  "type": "object"
+}

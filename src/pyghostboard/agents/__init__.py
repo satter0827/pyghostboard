@@ -8,6 +8,7 @@ from pyghostboard.agents.contracts import (
 )
 from pyghostboard.agents.mcts import MctsAgent, SearchConfig
 from pyghostboard.agents.random import RandomAgent
+from pyghostboard.agents.runtime import run_agent
 
 __all__ = [
     "AgentPolicy",
@@ -17,4 +18,5 @@ __all__ = [
     "PolicyFactory",
     "RandomAgent",
     "SearchConfig",
+    "run_agent",
 ]

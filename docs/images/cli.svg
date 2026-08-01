@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">pyghostboard command-line match</title>
+  <desc id="desc">A deterministic terminal example showing a board, turn, last move, captures, and legal actions.</desc>
+  <rect width="960" height="560" rx="18" fill="#111827"/>
+  <circle cx="30" cy="28" r="7" fill="#ef4444"/>
+  <circle cx="54" cy="28" r="7" fill="#f59e0b"/>
+  <circle cx="78" cy="28" r="7" fill="#22c55e"/>
+  <g fill="#e5e7eb" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20">
+    <text x="28" y="72" fill="#93c5fd">$ pyghostboard play --seed 7</text>
+    <text x="28" y="112" fill="#f9fafb">Board</text>
+    <text x="48" y="148">    a  b  c  d  e  f</text>
+    <text x="48" y="180">6   ·  ?  ?  ?  ?  ·</text>
+    <text x="48" y="212">5   ·  ?  ?  ?  ?  ·</text>
+    <text x="48" y="244">4   ·  ·  ·  ·  ·  ·</text>
+    <text x="48" y="276">3   ·  ·  ·  ·  ·  ·</text>
+    <text x="48" y="308">2   ·  B  B  B  B  ·</text>
+    <text x="48" y="340">1   ·  G  G  G  G  ·</text>
+    <text x="430" y="148" fill="#86efac">Turn: Player one · Ply: 0</text>
+    <text x="430" y="188">Last move: none</text>
+    <text x="430" y="228">Captured: none</text>
+    <text x="430" y="284" fill="#f9fafb">Legal actions:</text>
+    <text x="450" y="320">1. b2 to b3</text>
+    <text x="450" y="352">2. c2 to c3</text>
+    <text x="450" y="384">3. d2 to d3</text>
+    <text x="430" y="440" fill="#fcd34d">Choose a number, 'b2 c2', or 'b2 exit'</text>
+    <text x="28" y="520" fill="#6b7280">Player-safe view · opponent kinds remain hidden</text>
+  </g>
+</svg>
