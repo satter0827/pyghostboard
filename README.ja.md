@@ -21,8 +21,8 @@ pyghostboard play --seed 7
 ```
 
 標準形式のwheelとsource archiveを構築しますが、package registryには公開しません。
-現在の`main` commitへ付けた`vX.Y.Z` tagから、厳密に同じ版の成果物をGitHub Actionsで
-構築します。
+現在の`main` commitがRelease Gateを通過した後、Release Artifact workflowが厳密な版の
+成果物を構築・検証してから、同じcommitへ`vX.Y.Z` tagを付けます。
 
 同梱MCTS AIは既定で別プロセスとして動作し、担当プレイヤーから見える情報だけを受け取ります。
 再現可能な比較用AIは`--agent random`で選択できます。対局記録、再生、ルール検証は

@@ -32,12 +32,14 @@ Incompatible format evolution receives a new versioned Schema and explicit compa
 2. GitHub validates the test merge, including compatibility and source-branch policy.
 3. The maintainer merges through GitHub after every required check succeeds.
 4. Main push CI validates the exact resulting commit.
-5. The maintainer creates `vX.Y.Z` on that current `main` commit.
-6. The tag workflow derives the exact version, injects the complete commit SHA, builds the wheel and
-   source archive, verifies filenames and metadata, runs `twine check`, and uploads the archives as
-   a GitHub Actions artifact.
+5. The maintainer starts the Release Artifact workflow on that current `main` commit with version
+   `X.Y.Z`.
+6. The workflow injects the complete commit SHA, builds the wheel and source archive, verifies
+   filenames and metadata, runs `twine check`, and uploads the archives as a GitHub Actions
+   artifact.
+7. Only after the artifact is stored, the workflow creates `vX.Y.Z` on the same commit.
 
-The tag workflow does not publish to PyPI, TestPyPI, or another package registry. A successful main
+The release workflow does not publish to PyPI, TestPyPI, or another package registry. A successful main
 merge approves source for release; successful tag-artifact validation completes the release.
 
 ## Source distribution

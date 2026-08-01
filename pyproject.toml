@@ -59,6 +59,9 @@ dev = [
     "types-jsonschema>=4.25,<5",
 ]
 
+[tool.uv]
+required-version = "==0.12.1"
+
 [build-system]
 requires = ["hatchling>=1.27,<2", "hatch-vcs>=0.5,<1"]
 build-backend = "hatchling.build"
@@ -87,6 +90,21 @@ only-include = [
     "examples",
     "pyproject.toml",
     "src",
+    "tools/hatch_build.py",
+]
+
+[tool.hatch.build.hooks.custom]
+path = "tools/hatch_build.py"
+
+[tool.quality-gate]
+primary-python = "3.13"
+compatibility = [
+    { os = "ubuntu-24.04", python-version = "3.11", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.12", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.13", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.14", scope = "full" },
+    { os = "macos-15", python-version = "3.13", scope = "full" },
+    { os = "windows-2025", python-version = "3.13", scope = "domain" },
 ]
 
 [tool.pytest.ini_options]
@@ -119,10 +137,14 @@ select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 quote-style = "double"
 
 [tool.mypy]
-files = ["src", "tests"]
+files = ["src", "tests", "scripts", "tools"]
 python_version = "3.11"
 strict = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["hatchling.*"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 branch = true

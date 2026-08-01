@@ -26,12 +26,7 @@
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          {"context": "Main / Source Branch"},
-          {"context": "Quality"},
-          {"context": "Compatibility"},
-          {"context": "Integration"},
-          {"context": "Package"},
-          {"context": "Security / Dependencies"}
+          {"context": "Release Gate"}
         ],
         "strict_required_status_checks_policy": false
       }

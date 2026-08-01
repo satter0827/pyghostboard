@@ -60,6 +60,10 @@ Public names, error wording, external-store atomicity, deployed branch protectio
 approval require human review because repository tests cannot establish usability or external
 configuration.
 
+The analytical scope and finding format are defined in [`scripts/review_gate.md`](../../scripts/review_gate.md).
+Codex performs the initial analysis, and a human resolves its findings and decides whether to
+merge. This Review Gate complements the deterministic Release Gate instead of duplicating it.
+
 ## Acceptance
 
 A change is acceptable when its relevant requirements have automated evidence, all required CI
