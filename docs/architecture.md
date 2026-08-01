@@ -2,16 +2,17 @@
 
 ## Purpose
 
-pyghostboard provides a reusable Geister domain, persistence-friendly application services, and an
-isolated AI protocol. A trusted host owns complete state; players and AI processes receive only a
-player-specific view.
+pyghostboard provides a reusable Geister domain, persistence-friendly application services, and
+replaceable AI policies behind an isolated process protocol. A trusted host owns complete state;
+players and AI processes receive only a player-specific view.
 
 ## Dependency direction
 
 ```text
 CLI ───────────────┐
 External app ──────┼──> Adapters ──> Application ──> Domain
-AI process <── JSON Lines protocol ────────────────> PlayerView
+                   └──> AgentClient ──> AgentPolicy ──> PlayerView
+AI process <────────── JSON Lines adapter ────────────────┘
 ```
 
 - `domain` contains immutable rules, state transitions, observations, events, snapshots, and JSON
@@ -20,6 +21,8 @@ AI process <── JSON Lines protocol ─────────────�
   injected logging port through `MatchStore`.
 - `adapters` own configuration, versioned recording, and subprocess I/O. The CLI configures the
   default structlog renderer and injects its logger into the application service.
+- `agents` defines transport-independent policy and client protocols. Bundled random and MCTS
+  policies depend only on public observations, public rules, and pure domain transitions.
 - `cli` renders application results and never evaluates game rules.
 - `protocol` defines versioned messages and depends only on public domain values.
 
@@ -65,6 +68,19 @@ snapshots and placements are never passed to a logger.
 
 The `finished` AI request carries the final `PlayerView` for that AI. This reports the outcome
 without introducing a private model into the wire protocol.
+
+## Agent contracts
+
+`AgentPolicy` owns synchronous decisions and has no knowledge of JSON, processes, or timeouts.
+`AgentClient` exposes the same lifecycle asynchronously to a game host. `InProcessAgentClient`
+runs a policy directly, while `SubprocessAgent` translates semantic calls to versioned JSON Lines
+messages. The shared runner validates the wire lifecycle before delegating to a policy.
+
+Random and MCTS policies receive an `AgentContext` containing a player, public rules, and a seed.
+MCTS creates hypothetical snapshots only from the public view and sampled piece kinds; it never
+receives the trusted host's snapshot. Search uses fixed iteration and rollout limits instead of
+elapsed time, so equal inputs and configuration produce equal decisions. New policies implement
+`AgentPolicy`; new transports implement `AgentClient`.
 
 ## Change policy
 

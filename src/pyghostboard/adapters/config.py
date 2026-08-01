@@ -23,6 +23,10 @@ class RuntimeSettings(BaseSettings):
     agent_timeout: float = Field(default=10.0, gt=0)
     agent_max_message_bytes: int = Field(default=1_048_576, ge=1_024)
     agent_max_stderr_bytes: int = Field(default=65_536, ge=0)
+    ai_iterations: int = Field(default=256, ge=1)
+    ai_exploration_weight: float = Field(default=2**0.5, ge=0)
+    ai_rollout_plies: int = Field(default=96, ge=1)
+    ai_setup_candidate_limit: int = Field(default=256, ge=1)
     max_plies: int = Field(default=1_000, ge=1)
 
 

@@ -18,6 +18,7 @@ from pyghostboard._platform import require_posix
 from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent
 from pyghostboard.adapters.config import RuntimeSettings, load_rules
 from pyghostboard.adapters.recording import MatchRecorder, read_record
+from pyghostboard.agents.contracts import AgentContext
 from pyghostboard.application.service import (
     AbortReason,
     InMemoryMatchStore,
@@ -35,15 +36,6 @@ from pyghostboard.domain.models import (
     PlayerView,
     RuleSet,
     Square,
-)
-from pyghostboard.protocol import (
-    ActionRequest,
-    ActionResponse,
-    FinishedRequest,
-    InitializeRequest,
-    ReadyResponse,
-    SetupRequest,
-    SetupResponse,
 )
 
 app = typer.Typer(help="Play and inspect pyghostboard matches.", no_args_is_help=True)
@@ -69,9 +61,16 @@ def play(
     config: Annotated[Path | None, typer.Option(help="TOML rule configuration.")] = None,
     record: Annotated[Path | None, typer.Option(help="Save the private match record.")] = None,
     seed: Annotated[int, typer.Option(help="Seed for reproducible AI decisions.")] = 0,
+    agent: Annotated[
+        str | None,
+        typer.Option(help="Bundled AI policy: mcts or random."),
+    ] = None,
     ai_command: Annotated[
         list[str] | None,
-        typer.Option("--ai", help="AI executable and arguments; repeat for each argument."),
+        typer.Option(
+            "--ai-command",
+            help="External AI executable and arguments; repeat for each argument.",
+        ),
     ] = None,
     overwrite_record: Annotated[
         bool,
@@ -84,13 +83,13 @@ def play(
         settings = RuntimeSettings()
         _configure_logging(settings.log_level)
         rules = RuleSet.standard() if config is None else load_rules(config)
-        command = ai_command or [
-            sys.executable,
-            "-m",
-            "pyghostboard.random_agent",
-            "--seed",
-            str(seed),
-        ]
+        if ai_command is not None and agent is not None:
+            raise ValueError("--agent and --ai-command cannot be combined")
+        modules = {"mcts": "pyghostboard.mcts_agent", "random": "pyghostboard.random_agent"}
+        selected_agent = agent or "mcts"
+        if selected_agent not in modules:
+            raise ValueError("agent must be 'mcts' or 'random'")
+        command = ai_command or [sys.executable, "-m", modules[selected_agent]]
         asyncio.run(_play(rules, record, seed, command, settings, overwrite_record))
     except MatchAborted as error:
         structlog.get_logger("pyghostboard.cli").warning(
@@ -123,18 +122,11 @@ async def _play(
             max_message_bytes=settings.agent_max_message_bytes,
             max_stderr_bytes=settings.agent_max_stderr_bytes,
         ) as agent:
-            initialize = InitializeRequest(
-                request_id=uuid4(), seed=seed, player=Player.TWO, rules=rules
-            )
-            if not isinstance(await agent.request(initialize), ReadyResponse):
-                raise AgentFailure("agent did not acknowledge initialization")
-            setup_response = await agent.request(SetupRequest(request_id=uuid4()))
-            if not isinstance(setup_response, SetupResponse):
-                raise AgentFailure("agent did not return a placement")
+            await agent.initialize(AgentContext(seed=seed, player=Player.TWO, rules=rules))
             match = await service.create(
                 match_id,
                 rules,
-                {Player.ONE: human, Player.TWO: setup_response.placement},
+                {Player.ONE: human, Player.TWO: await agent.choose_placement()},
                 first_player=Player.ONE,
             )
             recorder.append(match.started_event())
@@ -151,10 +143,7 @@ async def _play(
                 if match.current_player is Player.ONE:
                     action = _prompt_action(view)
                 else:
-                    response = await agent.request(ActionRequest(request_id=uuid4(), view=view))
-                    if not isinstance(response, ActionResponse):
-                        raise AgentFailure("agent did not return an action")
-                    action = response.action
+                    action = await agent.choose_action(view)
                 transition = await service.play(match_id, match.current_player, action)
                 recorder.append(*transition.events)
                 for event in transition.events:
@@ -168,13 +157,7 @@ async def _play(
             winner = match.outcome.winner.value
             reason = match.outcome.reason.value
             console.print(f"[bold green]Winner: {winner} ({reason})[/bold green]")
-            if not isinstance(
-                await agent.request(
-                    FinishedRequest(request_id=uuid4(), view=match.view_for(Player.TWO))
-                ),
-                ReadyResponse,
-            ):
-                raise AgentFailure("agent did not acknowledge match completion")
+            await agent.finish(match.view_for(Player.TWO))
         destination = recorder.finalize()
         if destination is not None:
             console.print(f"Record saved to {destination}")

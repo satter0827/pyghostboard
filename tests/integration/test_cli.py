@@ -45,7 +45,7 @@ async def test_complete_match_with_bundled_agent(
         rules,
         record,
         5,
-        [sys.executable, "-m", "pyghostboard.random_agent", "--seed", "5"],
+        [sys.executable, "-m", "pyghostboard.random_agent"],
         RuntimeSettings(max_plies=1_000),
     )
 

@@ -24,12 +24,13 @@ pyghostboard play --seed 7
 現在の`main` commitへ付けた`vX.Y.Z` tagから、厳密に同じ版の成果物をGitHub Actionsで
 構築します。
 
-同梱ランダムAIは別プロセスで動作し、担当プレイヤーから見える情報だけを受け取ります。対局記録、
-再生、ルール検証は`pyghostboard --help`で確認できます。外部AIのcommandはshellを介さず、
-次のように引数ごとに指定します。
+同梱MCTS AIは既定で別プロセスとして動作し、担当プレイヤーから見える情報だけを受け取ります。
+再現可能な比較用AIは`--agent random`で選択できます。対局記録、再生、ルール検証は
+`pyghostboard --help`で確認できます。外部AIのcommandはshellを介さず、次のように引数ごとに
+指定します。
 
 ```shell
-pyghostboard play --ai python --ai /path/to/agent.py
+pyghostboard play --ai-command python --ai-command /path/to/agent.py
 ```
 
 秘密対局記録には両プレイヤーの駒種と配置が含まれます。secretとして保護してください。既存の
@@ -62,9 +63,11 @@ match = match.play(Player.ONE, view.legal_actions[0]).match
 変更できるのは盤面、配置領域、出口、全駒共通の移動ベクトル、駒数、既定3勝利条件の組合せ
 だけであり、任意のPythonコードは実行しません。
 
-実行時制限は`PYGHOSTBOARD_` prefixの環境変数から注入できます。変数名は`LOG_LEVEL`、
-`AGENT_TIMEOUT`、`AGENT_MAX_MESSAGE_BYTES`、`AGENT_MAX_STDERR_BYTES`、`MAX_PLIES`です。
-たとえば`PYGHOSTBOARD_AGENT_TIMEOUT=5`でAI応答期限を変更できます。
+実行時制限は`PYGHOSTBOARD_` prefixの環境変数から注入できます。主な変数名は`LOG_LEVEL`、
+`AGENT_TIMEOUT`、`AGENT_MAX_MESSAGE_BYTES`、`AGENT_MAX_STDERR_BYTES`、`MAX_PLIES`、
+`AI_ITERATIONS`、`AI_EXPLORATION_WEIGHT`、`AI_ROLLOUT_PLIES`、
+`AI_SETUP_CANDIDATE_LIMIT`です。たとえば`PYGHOSTBOARD_AI_ITERATIONS=2000`で再現可能な
+MCTS探索回数を増やせます。
 
 ## 開発
 

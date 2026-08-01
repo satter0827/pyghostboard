@@ -7,11 +7,25 @@ import os
 import signal
 from collections.abc import Sequence
 from contextlib import suppress
+from uuid import uuid4
 
 from pydantic import ValidationError
 
 from pyghostboard._platform import require_posix
-from pyghostboard.protocol import AgentRequest, AgentResponse, response_adapter
+from pyghostboard.agents.contracts import AgentContext
+from pyghostboard.domain.models import Action, Placement, PlayerView
+from pyghostboard.protocol import (
+    ActionRequest,
+    ActionResponse,
+    AgentRequest,
+    AgentResponse,
+    FinishedRequest,
+    InitializeRequest,
+    ReadyResponse,
+    SetupRequest,
+    SetupResponse,
+    response_adapter,
+)
 
 
 class AgentFailure(RuntimeError):
@@ -39,6 +53,7 @@ class SubprocessAgent:
         self._stderr_task: asyncio.Task[None] | None = None
         self._request_lock = asyncio.Lock()
         self.stderr = bytearray()
+        self._initialized = False
 
     async def __aenter__(self) -> SubprocessAgent:
         require_posix("AI process isolation")
@@ -59,7 +74,46 @@ class SubprocessAgent:
     async def __aexit__(self, *_: object) -> None:
         await self.close()
 
-    async def request(self, request: AgentRequest) -> AgentResponse:
+    async def initialize(self, context: AgentContext) -> None:
+        if self._initialized:
+            raise AgentFailure("agent was already initialized")
+        response = await self._request_serialized(
+            InitializeRequest(
+                request_id=uuid4(),
+                seed=context.seed,
+                player=context.player,
+                rules=context.rules,
+            )
+        )
+        if not isinstance(response, ReadyResponse):
+            raise AgentFailure("agent did not acknowledge initialization")
+        self._initialized = True
+
+    async def choose_placement(self) -> Placement:
+        self._require_initialized()
+        response = await self._request_serialized(SetupRequest(request_id=uuid4()))
+        if not isinstance(response, SetupResponse):
+            raise AgentFailure("agent did not return a placement")
+        return response.placement
+
+    async def choose_action(self, view: PlayerView) -> Action:
+        self._require_initialized()
+        response = await self._request_serialized(ActionRequest(request_id=uuid4(), view=view))
+        if not isinstance(response, ActionResponse):
+            raise AgentFailure("agent did not return an action")
+        if response.action not in view.legal_actions:
+            raise AgentFailure("agent returned an illegal action")
+        return response.action
+
+    async def finish(self, view: PlayerView) -> None:
+        self._require_initialized()
+        if view.outcome is None:
+            raise AgentFailure("agent received an unfinished view")
+        response = await self._request_serialized(FinishedRequest(request_id=uuid4(), view=view))
+        if not isinstance(response, ReadyResponse):
+            raise AgentFailure("agent did not acknowledge match completion")
+
+    async def _request_serialized(self, request: AgentRequest) -> AgentResponse:
         async with self._request_lock:
             return await self._request(request)
 
@@ -113,6 +167,7 @@ class SubprocessAgent:
             await self._stderr_task
         self._process = None
         self._stderr_task = None
+        self._initialized = False
 
     @staticmethod
     def _terminate_process_group(
@@ -133,3 +188,7 @@ class SubprocessAgent:
         if self._process is None:
             raise AgentFailure("agent process is not running")
         return self._process
+
+    def _require_initialized(self) -> None:
+        if not self._initialized:
+            raise AgentFailure("agent was not initialized")

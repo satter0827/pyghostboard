@@ -8,8 +8,10 @@ from uuid import UUID
 import pytest
 
 from pyghostboard.adapters.ai import AgentFailure, SubprocessAgent
-from pyghostboard.domain import Player, RuleSet
-from pyghostboard.protocol import InitializeRequest, ReadyResponse, SetupRequest, SetupResponse
+from pyghostboard.agents import AgentContext, MctsAgent, RandomAgent, SearchConfig
+from pyghostboard.domain import GameOutcome, Match, OutcomeReason, Placement, Player, RuleSet
+
+CONTEXT = AgentContext(player=Player.TWO, rules=RuleSet.standard(), seed=7)
 
 
 def test_agent_configuration_rejects_empty_commands_and_invalid_limits() -> None:
@@ -21,26 +23,94 @@ def test_agent_configuration_rejects_empty_commands_and_invalid_limits() -> None
 
 @pytest.mark.asyncio
 async def test_bundled_agent_initializes_and_returns_valid_setup() -> None:
-    command = [sys.executable, "-m", "pyghostboard.random_agent", "--seed", "7"]
+    command = [sys.executable, "-m", "pyghostboard.random_agent"]
     async with SubprocessAgent(command) as agent:
-        ready = await agent.request(
-            InitializeRequest(
-                request_id=UUID("00000000-0000-0000-0000-000000000010"),
-                seed=7,
-                player=Player.TWO,
-                rules=RuleSet.standard(),
-            )
-        )
-        setup = await agent.request(
-            SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000011"))
-        )
+        await agent.initialize(CONTEXT)
+        setup = await agent.choose_placement()
 
-    assert isinstance(ready, ReadyResponse)
-    assert isinstance(setup, SetupResponse)
-    assert len(setup.placement.good) == 4
-    assert set(setup.placement.good + setup.placement.bad) == set(
-        RuleSet.standard().start_squares(Player.TWO)
+    assert len(setup.good) == 4
+    assert set(setup.good + setup.bad) == set(RuleSet.standard().start_squares(Player.TWO))
+
+
+@pytest.mark.asyncio
+async def test_bundled_mcts_agent_uses_the_semantic_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYGHOSTBOARD_AI_ITERATIONS", "8")
+    monkeypatch.setenv("PYGHOSTBOARD_AI_ROLLOUT_PLIES", "8")
+    rules = RuleSet.standard()
+    one = rules.start_squares(Player.ONE)
+    two = rules.start_squares(Player.TWO)
+    match = Match.start(
+        UUID("00000000-0000-0000-0000-000000000028"),
+        rules,
+        {
+            Player.ONE: Placement(good=one[:4], bad=one[4:]),
+            Player.TWO: Placement(good=two[:4], bad=two[4:]),
+        },
     )
+    match = match.play(Player.ONE, match.legal_actions()[0]).match
+
+    async with SubprocessAgent([sys.executable, "-m", "pyghostboard.mcts_agent"]) as agent:
+        await agent.initialize(CONTEXT)
+        assert len((await agent.choose_placement()).good) == rules.good_count
+        assert await agent.choose_action(match.view_for(Player.TWO)) in match.legal_actions()
+
+
+@pytest.mark.asyncio
+async def test_semantic_agent_client_completes_its_lifecycle() -> None:
+    rules = RuleSet.standard()
+    one = rules.start_squares(Player.ONE)
+    two = rules.start_squares(Player.TWO)
+    match = Match.start(
+        UUID("00000000-0000-0000-0000-000000000029"),
+        rules,
+        {
+            Player.ONE: Placement(good=one[:4], bad=one[4:]),
+            Player.TWO: Placement(good=two[:4], bad=two[4:]),
+        },
+    )
+    match = match.play(Player.ONE, match.legal_actions()[0]).match
+
+    async with SubprocessAgent([sys.executable, "-m", "pyghostboard.random_agent"]) as agent:
+        await agent.initialize(AgentContext(player=Player.TWO, rules=rules, seed=29))
+        assert len((await agent.choose_placement()).good) == rules.good_count
+        assert await agent.choose_action(match.view_for(Player.TWO)) in match.legal_actions()
+        final_view = match.view_for(Player.TWO).model_copy(
+            update={
+                "outcome": GameOutcome(
+                    winner=Player.ONE,
+                    reason=OutcomeReason.CAPTURE_GOOD,
+                )
+            }
+        )
+        await agent.finish(final_view)
+
+
+def test_mcts_and_random_policies_complete_a_seeded_match() -> None:
+    rules = RuleSet.standard()
+    mcts = MctsAgent(
+        AgentContext(player=Player.ONE, rules=rules, seed=31),
+        SearchConfig(iterations=12, rollout_plies=12),
+    )
+    random_agent = RandomAgent(AgentContext(player=Player.TWO, rules=rules, seed=37))
+    match = Match.start(
+        UUID("00000000-0000-0000-0000-000000000030"),
+        rules,
+        {
+            Player.ONE: mcts.choose_placement(),
+            Player.TWO: random_agent.choose_placement(),
+        },
+    )
+
+    for _ in range(500):
+        if match.outcome is not None:
+            break
+        view = match.view_for(match.current_player)
+        policy = mcts if match.current_player is Player.ONE else random_agent
+        match = match.play(match.current_player, policy.choose_action(view)).match
+
+    assert match.outcome is not None
 
 
 @pytest.mark.asyncio
@@ -48,9 +118,7 @@ async def test_invalid_agent_response_is_rejected() -> None:
     command = [sys.executable, "-c", "print('not-json', flush=True)"]
     async with SubprocessAgent(command, timeout=1) as agent:
         with pytest.raises(AgentFailure, match="invalid response"):
-            await agent.request(
-                SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000012"))
-            )
+            await agent.initialize(CONTEXT)
 
 
 @pytest.mark.asyncio
@@ -58,9 +126,7 @@ async def test_agent_timeout_is_rejected_and_process_is_closed() -> None:
     command = [sys.executable, "-c", "import time; time.sleep(1)"]
     async with SubprocessAgent(command, timeout=0.01) as agent:
         with pytest.raises(AgentFailure, match="timed out"):
-            await agent.request(
-                SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000013"))
-            )
+            await agent.initialize(CONTEXT)
 
 
 @pytest.mark.asyncio
@@ -68,9 +134,7 @@ async def test_agent_message_size_is_limited() -> None:
     command = [sys.executable, "-c", "print('x' * 100, flush=True)"]
     async with SubprocessAgent(command, timeout=1, max_message_bytes=16) as agent:
         with pytest.raises(AgentFailure, match="size limit"):
-            await agent.request(
-                SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000014"))
-            )
+            await agent.initialize(CONTEXT)
 
 
 @pytest.mark.asyncio
@@ -78,9 +142,7 @@ async def test_agent_abnormal_exit_is_reported() -> None:
     command = [sys.executable, "-c", "raise SystemExit(7)"]
     async with SubprocessAgent(command, timeout=1) as agent:
         with pytest.raises(AgentFailure, match="exited before responding"):
-            await agent.request(
-                SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000015"))
-            )
+            await agent.initialize(CONTEXT)
 
 
 @pytest.mark.asyncio
@@ -97,12 +159,10 @@ print(json.dumps({
     "request_id": request["request_id"],
 }), flush=True)
 """
-    request_id = UUID("00000000-0000-0000-0000-000000000016")
     async with SubprocessAgent(
         [sys.executable, "-c", program], timeout=1, max_stderr_bytes=1_024
     ) as agent:
-        response = await agent.request(SetupRequest(request_id=request_id))
-        assert response.request_id == request_id
+        await agent.initialize(CONTEXT)
     assert len(agent.stderr) == 1_024
 
 
@@ -125,7 +185,7 @@ time.sleep(30)
 """
     agent = SubprocessAgent([sys.executable, "-c", program], timeout=1)
     async with agent:
-        await agent.request(SetupRequest(request_id=UUID("00000000-0000-0000-0000-000000000017")))
+        await agent.initialize(CONTEXT)
     child_pid = int(agent.stderr.decode().strip())
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
@@ -140,7 +200,6 @@ time.sleep(30)
 
 @pytest.mark.asyncio
 async def test_agent_rejects_mismatched_response_id_and_invalid_lifecycle() -> None:
-    request_id = UUID("00000000-0000-0000-0000-000000000018")
     wrong_id = UUID("00000000-0000-0000-0000-000000000019")
     program = (
         "import json,sys; sys.stdin.readline(); "
@@ -149,10 +208,10 @@ async def test_agent_rejects_mismatched_response_id_and_invalid_lifecycle() -> N
     )
     agent = SubprocessAgent([sys.executable, "-c", program], timeout=1)
     with pytest.raises(AgentFailure, match="not running"):
-        await agent.request(SetupRequest(request_id=request_id))
+        await agent.initialize(CONTEXT)
     async with agent:
         with pytest.raises(AgentFailure, match="request_id"):
-            await agent.request(SetupRequest(request_id=request_id))
+            await agent.initialize(CONTEXT)
         with pytest.raises(AgentFailure, match="already running"):
             await agent.__aenter__()
     await agent.close()

@@ -1,5 +1,10 @@
 # AI protocol
 
+Python integrations implement the transport-independent `AgentPolicy` protocol. It defines setup,
+action, and completion methods using domain values. `InProcessAgentClient` executes a policy
+directly. The JSON Lines protocol below is the process-isolated transport and does not define how a
+policy makes decisions.
+
 An AI is an executable that reads one UTF-8 JSON object per line from standard input and writes
 one response object per line to standard output. The host launches the argument vector directly;
 no shell parses it. Version 0.1.0 uses this sequence:
@@ -24,3 +29,7 @@ Defaults are a 10-second response deadline, 1 MiB per message, 64 KiB retained s
 oversize output, invalid output, or shutdown, the POSIX process group is terminated so descendants
 do not remain running. Configuration is injected through `RuntimeSettings` or `PYGHOSTBOARD_`
 environment variables.
+
+The bundled policies are `RandomAgent` and `MctsAgent`. MCTS settings use
+`PYGHOSTBOARD_AI_ITERATIONS`, `PYGHOSTBOARD_AI_EXPLORATION_WEIGHT`,
+`PYGHOSTBOARD_AI_ROLLOUT_PLIES`, and `PYGHOSTBOARD_AI_SETUP_CANDIDATE_LIMIT`.
