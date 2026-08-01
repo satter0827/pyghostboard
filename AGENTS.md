@@ -21,3 +21,9 @@ uv run pytest tests/unit
 
 Follow [Contributing](CONTRIBUTING.md) for branch, complete verification, and release procedures.
 Unresolved alternatives belong in [notes](docs/notes/README.md), not in the released design.
+
+## Review constraints
+
+Follow [`scripts/review_gate.md`](scripts/review_gate.md) for constraints that require analysis or
+human judgment. Do not claim that repository tests prove those constraints. Codex performs the
+initial review, and a human resolves the findings and decides whether to merge.

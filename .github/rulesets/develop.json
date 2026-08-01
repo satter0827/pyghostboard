@@ -26,11 +26,7 @@
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          {"context": "Quality"},
-          {"context": "Unit"},
-          {"context": "Integration"},
-          {"context": "Package"},
-          {"context": "Security / Dependencies"}
+          {"context": "Develop Gate"}
         ],
         "strict_required_status_checks_policy": true
       }

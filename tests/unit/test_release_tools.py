@@ -5,6 +5,8 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from scripts import release_gate
+from tools.generate_schemas import check_schemas, write_schemas
 from tools.verify_distribution import verify_distribution
 
 
@@ -49,3 +51,38 @@ def test_release_verifier_rejects_wrong_build_provenance(tmp_path: Path) -> None
     _write_archives(tmp_path, "0.1.0")
     with pytest.raises(ValueError, match="provenance"):
         verify_distribution(tmp_path, "0.1.0", "b" * 40)
+
+
+def test_schema_check_detects_stale_generated_document(tmp_path: Path) -> None:
+    write_schemas(tmp_path)
+    check_schemas(tmp_path)
+    schema = next(tmp_path.glob("*.schema.json"))
+    schema.write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="generated schemas are stale"):
+        check_schemas(tmp_path)
+
+
+def test_quality_configuration_produces_supported_matrix() -> None:
+    matrix = release_gate.compatibility_matrix()
+
+    assert {entry["python-version"] for entry in matrix} == {"3.11", "3.12", "3.13", "3.14"}
+    assert {entry["scope"] for entry in matrix} == {"full", "domain"}
+    assert any(entry["os"] == "windows-2025" for entry in matrix)
+    assert release_gate.primary_python() == "3.13"
+
+
+def test_gate_stops_on_failed_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Result:
+        returncode = 7
+
+    monkeypatch.setattr("scripts.release_gate.subprocess.run", lambda *args, **kwargs: Result())
+
+    with pytest.raises(RuntimeError, match=r"failed \(7\)"):
+        release_gate.run(["failing-command"])
+
+
+@pytest.mark.parametrize("version", ["1", "1.2", "v1.2.3", "1.2.3.dev1"])
+def test_release_version_must_be_stable_semver(version: str) -> None:
+    with pytest.raises(ValueError, match=r"X\.Y\.Z"):
+        release_gate.validate_version(version)

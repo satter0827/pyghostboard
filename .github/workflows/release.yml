@@ -1,42 +1,71 @@
 name: Release Artifact
 
 on:
-  push:
-    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version in X.Y.Z form
+        required: true
+        type: string
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.version }}
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build distributions
+  release:
+    name: Release verified distributions
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Validate release tag
-        run: '[[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
+          ref: main
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.13"
-      - run: git fetch origin main
-      - name: Require the tagged commit to be the current main commit
+      - run: git fetch origin main --tags
+      - name: Require the current main commit
         run: test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
-      - run: uv sync --locked --group dev
-      - run: uv run python tools/write_build_info.py "$GITHUB_SHA"
-      - run: uv run pytest tests/unit tests/integration
-      - name: Build the exact tagged version
+      - name: Require successful main Release Gate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          SETUPTOOLS_SCM_PRETEND_VERSION="$version" uv build --clear
-          uv run python tools/verify_distribution.py "$version" dist --commit "$GITHUB_SHA"
-      - run: uv run twine check dist/*
+          conclusion="$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow CI \
+            --branch main \
+            --commit "$GITHUB_SHA" \
+            --event push \
+            --limit 1 \
+            --json conclusion \
+            --jq '.[0].conclusion')"
+          test "$conclusion" = "success"
+      - run: uv sync --locked --group dev
+      - name: Build and verify the release
+        run: >-
+          uv run python scripts/release_gate.py release
+          --version "${{ inputs.version }}"
+          --commit "$GITHUB_SHA"
+          --dist-dir dist
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: python-package-distributions
+          name: python-package-distributions-${{ inputs.version }}
           path: dist/
+      - name: Create the verified tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tag="v$VERSION"
+          remote_commit="$(git ls-remote --tags origin "refs/tags/$tag" | cut -f1)"
+          if test -n "$remote_commit"; then
+            test "$remote_commit" = "$GITHUB_SHA"
+          else
+            git tag "$tag" "$GITHUB_SHA"
+            git push origin "refs/tags/$tag"
+          fi

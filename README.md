@@ -22,8 +22,8 @@ pyghostboard play --seed 7
 ```
 
 The project prepares standard wheel and source archives but does not publish them to a package
-registry. A `vX.Y.Z` tag on the current `main` commit builds an exact-version artifact in GitHub
-Actions.
+registry. After the current `main` commit passes the Release Gate, the Release Artifact workflow
+builds and verifies an exact version before tagging that commit as `vX.Y.Z`.
 
 The bundled MCTS AI runs by default in a separate process and receives only the information visible
 to its player. Select the reproducible baseline with `--agent random`. Use `pyghostboard --help`

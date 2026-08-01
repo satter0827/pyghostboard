@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [develop, main]
   push:
-    branches: [main]
+    branches: [develop, main]
   workflow_dispatch:
 
 permissions:
@@ -15,104 +15,97 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  matrix-configuration:
+    name: Matrix / Configuration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      compatibility: ${{ steps.configuration.outputs.compatibility }}
+      primary-python: ${{ steps.configuration.outputs.primary-python }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: configuration
+        run: |
+          echo "compatibility=$(python3 scripts/release_gate.py matrix)" >> "$GITHUB_OUTPUT"
+          echo "primary-python=$(python3 scripts/release_gate.py primary-python)" >> "$GITHUB_OUTPUT"
+
   quality:
     name: Quality
+    needs: matrix-configuration
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.matrix-configuration.outputs.primary-python }}
           enable-cache: true
       - run: uv sync --locked --group dev
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run mypy
-      - run: uv run lint-imports
-      - run: uv run pytest tests/structure
-      - run: uv run python tools/generate_schemas.py
-      - run: git diff --exit-code -- src/pyghostboard/schemas
+      - run: uv run python scripts/release_gate.py check quality
 
   unit:
     name: Unit
+    needs: matrix-configuration
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.matrix-configuration.outputs.primary-python }}
           enable-cache: true
       - run: uv sync --locked --group dev
-      - run: uv run pytest tests/unit
+      - run: uv run python scripts/release_gate.py check unit
 
   integration:
     name: Integration
+    needs: matrix-configuration
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.matrix-configuration.outputs.primary-python }}
           enable-cache: true
       - run: uv sync --locked --group dev
-      - run: uv run coverage erase
-      - run: uv run coverage run -m pytest tests/unit
-      - run: uv run coverage run --append -m pytest tests/integration
-      - run: uv run coverage report
+      - run: uv run python scripts/release_gate.py check integration
 
   package:
     name: Package
+    needs: matrix-configuration
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.13"
+          python-version: ${{ needs.matrix-configuration.outputs.primary-python }}
           enable-cache: true
       - run: uv sync --locked --group dev
-      - run: uv run python tools/write_build_info.py "$GITHUB_SHA"
-      - run: uv build
-      - run: uv run twine check dist/*
-      - run: uv venv --python 3.13 "$RUNNER_TEMP/package-venv"
-      - run: uv pip install --python "$RUNNER_TEMP/package-venv/bin/python" dist/*.whl
-      - run: |
-          "$RUNNER_TEMP/package-venv/bin/python" -c \
-            "import pyghostboard; import pyghostboard.schemas; print(pyghostboard.__version__)"
-          "$RUNNER_TEMP/package-venv/bin/python" -c \
-            "from pyghostboard.adapters.recording import MatchRecorder; recorder = MatchRecorder(None); recorder.discard()"
+      - run: uv run python scripts/release_gate.py check package --commit "$GITHUB_SHA"
 
   security-dependencies:
     name: Security / Dependencies
+    needs: matrix-configuration
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-      - run: uv audit --locked --preview-features audit-command
+      - run: python3 scripts/release_gate.py check dependencies
 
   compatibility-matrix:
-    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+      github.ref == 'refs/heads/main'
     name: Compatibility / ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    needs: matrix-configuration
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-24.04
-            python-version: "3.11"
-          - os: ubuntu-24.04
-            python-version: "3.12"
-          - os: ubuntu-24.04
-            python-version: "3.13"
-          - os: ubuntu-24.04
-            python-version: "3.14"
-          - os: macos-15
-            python-version: "3.13"
+      matrix: ${{ fromJSON(needs.matrix-configuration.outputs.compatibility) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -120,63 +113,22 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - run: uv sync --locked --group dev
-      - run: uv run pytest tests/unit tests/integration
-      - run: uv run python tools/write_build_info.py "$GITHUB_SHA"
-      - run: uv build --clear
-      - run: uv venv --python "${{ matrix.python-version }}" "$RUNNER_TEMP/compat-venv"
-      - run: uv pip install --python "$RUNNER_TEMP/compat-venv/bin/python" dist/*.whl
-      - name: Smoke test installed wheel
-        run: |
-          python="$RUNNER_TEMP/compat-venv/bin/python"
-          cli="$RUNNER_TEMP/compat-venv/bin/pyghostboard"
-          "$python" -c \
-            "from pyghostboard.domain import Match, RuleSet; from pyghostboard.application import MatchService; print(Match, RuleSet.standard(), MatchService)"
-          "$cli" --help
-          "$cli" play --help
-          "$cli" replay --help
-          "$cli" rules validate --help
-          "$python" -m pyghostboard.random_agent --help
-          "$python" -c \
-            "from pyghostboard.adapters.recording import MatchRecorder; recorder = MatchRecorder(None); recorder.discard()"
-
-  domain-compatibility-windows:
-    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main'
-    name: Compatibility / windows-2025 / Python 3.13 / Domain
-    runs-on: windows-2025
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          python-version: "3.13"
-          enable-cache: true
-      - run: uv sync --locked --group dev
       - run: >-
-          uv run pytest
-          tests/unit/test_domain.py
-          tests/unit/test_domain_validation.py
-          tests/unit/test_application.py
-          tests/unit/test_package.py
-          tests/structure
-      - run: uv run python tools/write_build_info.py "$env:GITHUB_SHA"
-      - run: uv build --clear
-      - run: uv venv --python 3.13 "$env:RUNNER_TEMP\domain-venv"
-      - run: uv pip install --python "$env:RUNNER_TEMP\domain-venv\Scripts\python.exe" (Get-ChildItem dist\*.whl)
-      - name: Smoke test installed domain wheel
-        run: >-
-          & "$env:RUNNER_TEMP\domain-venv\Scripts\python.exe" -c
-          "from pyghostboard.domain import Match, RuleSet; from pyghostboard.application import MatchService; print(Match, RuleSet.standard(), MatchService)"
+          uv run python scripts/release_gate.py check compatibility
+          --scope "${{ matrix.scope }}"
 
   compatibility:
-    if: always() && (github.event_name == 'workflow_dispatch' || github.base_ref == 'main' || github.ref == 'refs/heads/main')
+    if: >-
+      always() && (
+        (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        github.ref == 'refs/heads/main'
+      )
     name: Compatibility
-    needs: [compatibility-matrix, domain-compatibility-windows]
+    needs: compatibility-matrix
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - run: |
-          test "${{ needs.compatibility-matrix.result }}" = "success"
-          test "${{ needs.domain-compatibility-windows.result }}" = "success"
+      - run: test "${{ needs.compatibility-matrix.result }}" = "success"
 
   main-source:
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
@@ -191,3 +143,42 @@ jobs:
         run: |
           test "$HEAD_REF" = "develop"
           test "$HEAD_REPOSITORY" = "${{ github.repository }}"
+
+  develop-gate:
+    if: >-
+      always() && !(
+        (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        github.ref == 'refs/heads/main'
+      )
+    name: Develop Gate
+    needs: [quality, unit, integration, package, security-dependencies]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: |
+          test "${{ needs.quality.result }}" = "success"
+          test "${{ needs.unit.result }}" = "success"
+          test "${{ needs.integration.result }}" = "success"
+          test "${{ needs.package.result }}" = "success"
+          test "${{ needs.security-dependencies.result }}" = "success"
+
+  release-gate:
+    if: >-
+      always() && (
+        (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+        github.ref == 'refs/heads/main'
+      )
+    name: Release Gate
+    needs: [quality, unit, integration, package, security-dependencies, compatibility, main-source]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: |
+          test "${{ needs.quality.result }}" = "success"
+          test "${{ needs.unit.result }}" = "success"
+          test "${{ needs.integration.result }}" = "success"
+          test "${{ needs.package.result }}" = "success"
+          test "${{ needs.security-dependencies.result }}" = "success"
+          test "${{ needs.compatibility.result }}" = "success"
+          test "${{ needs.main-source.result }}" = "success" -o \
+            "${{ needs.main-source.result }}" = "skipped"

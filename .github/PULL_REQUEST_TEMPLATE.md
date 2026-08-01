@@ -43,6 +43,10 @@ Record decisions that require judgment, including the reviewer and completion ev
 Record the owner, trigger, inputs, completion condition, and durable evidence for any manual work.
 Write `None` when no manual procedure applies.
 
+## Review
+
+Summarize resolved Review Gate findings or state that the latest material change had no findings.
+
 ## Checklist
 
 - [ ] The pull request has one coherent purpose.
