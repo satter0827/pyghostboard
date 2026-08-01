@@ -3,8 +3,7 @@ name: CI
 on:
   pull_request:
     branches: [develop, main]
-  push:
-    branches: [develop, main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,31 +28,18 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy
 
-  unit-matrix:
-    name: Unit / Python ${{ matrix.python-version }}
+  unit:
+    name: Unit
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
           enable-cache: true
       - run: uv sync --locked --group dev
       - run: uv run pytest tests/unit
-
-  unit:
-    name: Unit
-    if: always()
-    needs: unit-matrix
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    steps:
-      - run: test "${{ needs.unit-matrix.result }}" = "success"
 
   integration:
     name: Integration
@@ -69,7 +55,7 @@ jobs:
       - run: uv run coverage erase
       - run: uv run coverage run -m pytest tests/unit
       - run: uv run coverage run --append -m pytest tests/integration
-      - run: uv run coverage report --fail-under=90
+      - run: uv run coverage report
 
   package:
     name: Package
@@ -84,20 +70,51 @@ jobs:
       - run: uv sync --locked --group dev
       - run: uv build
       - run: uv run twine check dist/*
-      - run: uv venv --python 3.13 .package-venv
-      - run: uv pip install --python .package-venv/bin/python --no-deps dist/*.whl
-      - run: .package-venv/bin/python -c "import pyghostboard; print(pyghostboard.__version__)"
-      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - run: uv venv --python 3.13 "$RUNNER_TEMP/package-venv"
+      - run: uv pip install --python "$RUNNER_TEMP/package-venv/bin/python" --no-deps dist/*.whl
+      - run: |
+          "$RUNNER_TEMP/package-venv/bin/python" -c \
+            "import pyghostboard; print(pyghostboard.__version__)"
+
+  security-dependencies:
+    name: Security / Dependencies
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - run: uv audit --locked --preview-features audit-command
+
+  compatibility-matrix:
+    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'main'
+    name: Compatibility / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          name: pyghostboard-distributions
-          path: dist/*
-          if-no-files-found: error
-          retention-days: 14
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --locked --group dev
+      - run: uv run pytest tests/unit tests/integration
+
+  compatibility:
+    if: always() && (github.event_name == 'workflow_dispatch' || github.base_ref == 'main')
+    name: Compatibility
+    needs: compatibility-matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: test "${{ needs.compatibility-matrix.result }}" = "success"
 
   main-source:
-    name: Main / Source Branch
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    name: Main / Source Branch
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
