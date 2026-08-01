@@ -218,8 +218,7 @@ def smoke_test_wheel(
         ["rules", "validate", "--help"],
     ):
         run([str(cli), *arguments])
-    run([str(python), "-m", "pyghostboard.random_agent", "--help"])
-    run([str(python), "-m", "pyghostboard.mcts_agent", "--help"])
+    run([str(python), "-m", "pyghostboard.agent_runner", "--help"])
     run(
         [
             str(python),

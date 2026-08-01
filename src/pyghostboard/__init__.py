@@ -4,16 +4,25 @@ from importlib.metadata import version
 from typing import Final
 
 from pyghostboard.agents import (
-    AgentClient,
-    AgentContext,
     AgentPolicy,
     AgentProtocolError,
-    InProcessAgentClient,
+    InProcessAgentController,
     MctsAgent,
     RandomAgent,
     SearchConfig,
 )
-from pyghostboard.application import InMemoryMatchStore, MatchService, MatchStore
+from pyghostboard.application import (
+    InMemoryMatchStore,
+    MatchObserver,
+    MatchResult,
+    MatchRunner,
+    MatchService,
+    MatchSpec,
+    MatchStore,
+    PlayerContext,
+    PlayerController,
+    PrivateEventSink,
+)
 from pyghostboard.domain import (
     Escape,
     Exit,
@@ -29,8 +38,6 @@ from pyghostboard.domain import (
 )
 
 __all__ = [
-    "AgentClient",
-    "AgentContext",
     "AgentPolicy",
     "AgentProtocolError",
     "Escape",
@@ -38,15 +45,22 @@ __all__ = [
     "GameOutcome",
     "GhostKind",
     "InMemoryMatchStore",
-    "InProcessAgentClient",
+    "InProcessAgentController",
     "Match",
+    "MatchObserver",
+    "MatchResult",
+    "MatchRunner",
     "MatchService",
+    "MatchSpec",
     "MatchStore",
     "MctsAgent",
     "Move",
     "Placement",
     "Player",
+    "PlayerContext",
+    "PlayerController",
     "PlayerView",
+    "PrivateEventSink",
     "RandomAgent",
     "RuleSet",
     "SearchConfig",

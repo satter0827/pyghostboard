@@ -53,8 +53,8 @@ def test_runtime_settings_use_prefixed_environment(monkeypatch: pytest.MonkeyPat
 
 
 def test_bundled_agent_commands_are_resolved_by_the_adapter() -> None:
-    assert bundled_agent_command(None)[-1] == "pyghostboard.mcts_agent"
-    assert bundled_agent_command("random")[-1] == "pyghostboard.random_agent"
+    assert bundled_agent_command(None)[-1] == "mcts"
+    assert bundled_agent_command("random")[-1] == "random"
     with pytest.raises(ValueError, match="mcts, random"):
         bundled_agent_command("unknown")
 

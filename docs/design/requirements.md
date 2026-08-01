@@ -21,8 +21,9 @@ integrating an external process, and local players using the CUI.
   receiving live opposing ghost kinds.
 - **FR-004 — Deterministic execution:** A fixed rule set, placements, action sequence, seed, and AI
   iteration policy produce reproducible domain events and outcomes.
-- **FR-005 — Application integration:** A host creates, loads, observes, and advances matches
-  through an application service backed by an injected persistence port.
+- **FR-005 — Application integration:** A host creates, loads, observes, and advances transitions
+  through an application service, or runs a complete match through two injected player controllers,
+  backed by an injected persistence port.
 - **FR-006 — Replaceable AI:** The host runs a transport-independent policy in process or through a
   shell-free versioned JSON Lines subprocess, and rejects invalid lifecycle transitions,
   placements, player views, responses, actions, and final observations. The package provides
