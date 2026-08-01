@@ -1,7 +1,7 @@
 # Contributing
 
-Thank you for contributing to pyghostboard. Keep each change focused, testable, and consistent with
-the dependency boundaries in [Architecture](docs/architecture.md).
+Thank you for contributing to pyghostboard. Keep each pull request focused on one cause and
+consistent with the dependency boundaries in [Architecture](docs/architecture.md).
 
 ## Setup
 
@@ -9,42 +9,73 @@ the dependency boundaries in [Architecture](docs/architecture.md).
 uv sync --locked --group dev
 ```
 
-## Development workflow
+## Branches and worktrees
 
-1. Update `develop` and create a short-lived branch.
-2. Use `feature/`, `fix/`, `docs/`, `test/`, or `chore/` followed by a concise description.
-3. Implement one coherent change and its tests and documentation together.
-4. Run the checks listed below.
-5. Open a pull request against `develop`.
+`develop` is the integration branch. `main` contains release-ready revisions. Both branches require
+a pull request; direct pushes, force-pushes, and deletion are prohibited.
 
-Feature pull requests are squash-merged into `develop`. Release pull requests merge `develop` into
-`main` with a merge commit. Direct pushes and force-pushes to both persistent branches are disabled.
+Create short-lived branches from the latest `origin/develop`. Use `feature/`, `fix/`, `refactor/`,
+`test/`, `docs/`, or `chore/` followed by a concise purpose. When work proceeds in parallel, use one
+Git worktree per branch and never share a worktree between tasks.
 
-## Quality checks
+```shell
+git fetch origin
+git worktree add ../pyghostboard-task -b fix/task-name origin/develop
+```
+
+Keep one cause and one ownership boundary in each branch. If two changes modify the same
+responsibility or files, combine them or complete them in dependency order. Before merging, bring
+the latest integration state into the short-lived branch without rewriting published history.
+
+```shell
+git fetch origin
+git merge --no-edit origin/develop
+```
+
+Short-lived pull requests are squash-merged into `develop`. Releases merge `develop` into `main`
+with a merge commit. Pull requests to `main` from any other branch are rejected.
+
+## Verification
+
+Run the fast checks while implementing:
 
 ```shell
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy
 uv run pytest tests/unit
-uv run pytest tests/integration
-uv build
-uv run twine check dist/*
 ```
 
-Run `uv run ruff format .` before committing when formatting changes are required.
+Before opening a pull request, run the complete local checks:
 
-## Tests
+```shell
+uv run coverage erase
+uv run coverage run -m pytest tests/unit
+uv run coverage run --append -m pytest tests/integration
+uv run coverage report
+uv build
+uv run twine check dist/*
+uv audit --locked --preview-features audit-command
+```
 
-- Unit tests cover one behavior without subprocesses, filesystems, clocks, or external services.
-- Integration tests verify boundaries such as distributions, command-line execution, and complete
-  game flows.
-- Time-based AI tests are not allowed in CI. Use fixed seeds and iteration counts.
+`uv audit` contacts the configured vulnerability service. A network failure is an environment
+failure, not evidence that dependencies are safe.
 
-Do not add placeholder tests. A test must protect a public contract, invariant, or observed failure.
+## Test boundaries
+
+- Unit tests protect one contract or invariant without network access, subprocesses, the real
+  filesystem, or the real clock.
+- Integration tests verify boundaries such as distributions, command-line execution, connected
+  modules, and complete game flows.
+- Seeded and AI behavior uses fixed seeds and iteration counts. Elapsed time is not a CI assertion.
+- Every test protects a public contract, invariant, or reproduced failure. Do not add placeholders.
+
+Add specialized categories such as benchmarks or resource-serial tests only when implemented
+behavior requires them.
 
 ## Pull requests
 
-Use a Conventional Commit prefix in the pull-request title, such as `feat:`, `fix:`, `docs:`,
-`test:`, `refactor:`, or `chore:`. Explain why the change is needed, its impact, and the checks that
-were run.
+Use a Conventional Commit prefix in the title, such as `feat:`, `fix:`, `refactor:`, `test:`,
+`docs:`, or `chore:`. Describe the cause, the ownership boundary changed, what remains outside the
+change, and the exact validation performed. Update architecture documentation in the same pull
+request when a dependency boundary changes.

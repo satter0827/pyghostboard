@@ -38,17 +38,8 @@ cd pyghostboard
 uv sync --locked --group dev
 ```
 
-Run the same quality checks used by CI:
-
-```shell
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy
-uv run pytest tests/unit
-uv run pytest tests/integration
-uv build
-uv run twine check dist/*
-```
+Development workflow, branch rules, and verification commands are defined in
+[Contributing](CONTRIBUTING.md).
 
 ## Repository structure
 

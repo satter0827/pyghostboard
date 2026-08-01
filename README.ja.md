@@ -37,17 +37,8 @@ cd pyghostboard
 uv sync --locked --group dev
 ```
 
-CIと同じ品質確認を実行します。
-
-```shell
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy
-uv run pytest tests/unit
-uv run pytest tests/integration
-uv build
-uv run twine check dist/*
-```
+開発手順、ブランチ規則、品質確認コマンドは
+[コントリビューションガイド](CONTRIBUTING.md)を参照してください。
 
 ## リポジトリ構成
 
