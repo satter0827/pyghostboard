@@ -1,6 +1,6 @@
 [project]
 name = "pyghostboard"
-version = "0.1.0.dev0"
+dynamic = ["version"]
 description = "A typed Python engine for a hidden-information board game with fair AI."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
@@ -26,7 +26,16 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.12,<3",
+    "pydantic-settings>=2.11,<3",
+    "rich>=14.1,<15",
+    "structlog>=25.4,<27",
+    "typer>=0.20,<1",
+]
+
+[project.scripts]
+pyghostboard = "pyghostboard.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/satter0827/pyghostboard"
@@ -38,16 +47,30 @@ Issues = "https://github.com/satter0827/pyghostboard/issues"
 dev = [
     "build>=1.2,<2",
     "hatchling>=1.27,<2",
+    "hatch-vcs>=0.5,<1",
+    "hypothesis>=6.140,<7",
+    "import-linter>=2.5,<3",
+    "jsonschema>=4.25,<5",
     "mypy>=1.14,<2",
     "pytest>=8.3,<10",
+    "pytest-asyncio>=0.25,<2",
     "pytest-cov>=6,<8",
     "ruff>=0.9,<1",
     "twine>=6,<7",
+    "types-jsonschema>=4.25,<5",
 ]
 
 [build-system]
-requires = ["hatchling>=1.27,<2"]
+requires = ["hatchling>=1.27,<2", "hatch-vcs>=0.5,<1"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.1.0.dev0"
+
+[tool.hatch.version.raw-options]
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyghostboard"]
@@ -55,6 +78,7 @@ packages = ["src/pyghostboard"]
 [tool.hatch.build.targets.sdist]
 only-include = [
     "LICENSE",
+    "CHANGELOG.md",
     "README.md",
     "pyproject.toml",
     "src",
@@ -64,6 +88,19 @@ only-include = [
 addopts = "-q --strict-config --strict-markers"
 testpaths = ["tests"]
 tmp_path_retention_policy = "failed"
+
+[tool.importlinter]
+root_package = "pyghostboard"
+
+[[tool.importlinter.contracts]]
+name = "Application depends only on domain"
+type = "layers"
+layers = [
+    "pyghostboard.cli",
+    "pyghostboard.adapters",
+    "pyghostboard.application | pyghostboard.protocol",
+    "pyghostboard.domain",
+]
 
 [tool.ruff]
 line-length = 100

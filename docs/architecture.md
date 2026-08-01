@@ -2,40 +2,63 @@
 
 ## Purpose
 
-pyghostboard separates game rules, player-visible information, decision policies, and user
-interfaces. The separation prevents an AI from reading hidden state and keeps the game engine
-usable outside a specific interface.
-
-## Intended boundaries
-
-```text
-CLI ───────────────┐
-                   v
-Public API ──> Domain model <── Observation
-                   ^                  |
-                   |                  v
-              Game rules        AI policies
-```
-
-- The domain model owns the complete game state and is the only layer allowed to mutate it.
-- Game rules operate on domain types and do not depend on AI, CLI, storage, or network code.
-- An observation contains only information visible to one player.
-- AI policies receive observations and legal actions, never the complete hidden state.
-- Interfaces call the public API instead of modifying domain objects directly.
+pyghostboard provides a reusable Geister domain, persistence-friendly application services, and an
+isolated AI protocol. A trusted host owns complete state; players and AI processes receive only a
+player-specific view.
 
 ## Dependency direction
 
-The domain package may depend only on the Python standard library and other domain modules. AI and
-interface packages may depend on the public domain API. Dependencies in the opposite direction are
-not allowed.
+```text
+CLI ───────────────┐
+External app ──────┼──> Adapters ──> Application ──> Domain
+AI process <── JSON Lines protocol ────────────────> PlayerView
+```
 
-## Current state
+- `domain` contains immutable rules, state transitions, observations, events, snapshots, and JSON
+  codecs. It never reads files, environment variables, clocks, loggers, or processes.
+- `application` coordinates load, transition, atomic commit, public event projection, and an
+  injected logging port through `MatchStore`.
+- `adapters` own configuration, versioned recording, and subprocess I/O. The CLI configures the
+  default structlog renderer and injects its logger into the application service.
+- `cli` renders application results and never evaluates game rules.
+- `protocol` defines versioned messages and depends only on public domain values.
 
-Only the installable package boundary and its distribution contract exist. Modules are added when
-their behavior is implemented and tested; empty architectural placeholders are intentionally
-avoided.
+Import Linter enforces these directions. Internal modules import definitions directly rather than
+the package-root convenience facade. Executable repository-level constraints also live in
+`tests/structure`; review-only constraints for coding agents are recorded in the root `AGENTS.md`.
+
+## Information boundary
+
+`PrivateMatchSnapshot` and `PrivateMatchEvent` are trusted-host values and may contain both
+placements. `PlayerView` has separate shapes for owned and opposing pieces: opposing pieces do not
+have a ghost-kind field. The AI subprocess receives serialized `PlayerView` values and legal
+actions only. It never receives a `Match`, private snapshot, private event, or record path.
+
+Removed pieces retain a private removal reason and square. This distinguishes capture from escape
+and lets restore validation prove that an escaped good ghost left through a configured exit.
+
+Process isolation prevents Python object access. It does not attempt to defend against an operating
+system user attaching a debugger to another process.
+
+## State and persistence
+
+`Match.play()` is a pure transition that returns a new match and events. `Match.snapshot()` creates
+a versioned persistence value; `Match.restore()` validates it before constructing a trusted match.
+`MatchStore.commit()` atomically checks the previous revision, writes the new snapshot, and appends
+events. Storage implementations remain outside the domain.
+
+Private JSON Lines records begin with a `record_header` containing the record format version,
+distribution version, and complete main commit SHA. Subsequent lines are private match events. The
+temporary file has mode `0600` and is created beside an explicit destination so final promotion is
+an atomic same-filesystem replacement.
+
+Public JSON formats use UTF-8, Semantic Versioning, and bundled JSON Schema Draft 2020-12 schemas.
+Domain events contain no timestamps so seeded executions remain reproducible.
+Diagnostic logs use RFC 3339 UTC timestamps, but only public event projections are logged; complete
+snapshots and placements are never passed to a logger.
 
 ## Change policy
 
-Architecture changes must update this document in the same pull request. Reusable abstractions are
-introduced only after at least two concrete callers require the same behavior.
+Architecture changes update this document with their implementation. New abstractions require a
+concrete boundary or at least two callers. Rule customization must preserve the property that legal
+actions do not depend on an opponent's hidden ghost kinds.

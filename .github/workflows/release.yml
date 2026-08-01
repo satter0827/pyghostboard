@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Validate release tag
+        run: '[[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]'
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.13"
+      - run: git fetch origin main
+      - name: Require the tagged commit to be the current main commit
+        run: test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+      - run: uv sync --locked --group dev
+      - run: uv run python tools/write_build_info.py "$GITHUB_SHA"
+      - run: uv run pytest tests/unit tests/integration
+      - run: uv build
+      - run: uv run twine check dist/*
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pyghostboard
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  smoke-testpypi:
+    name: Smoke test TestPyPI package
+    needs: publish-testpypi
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.13"
+      - run: uv venv
+      - name: Install and invoke the TestPyPI package
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for attempt in {1..10}; do
+            if uv pip install \
+              --index https://test.pypi.org/simple/ \
+              --default-index https://pypi.org/simple/ \
+              "pyghostboard==$version"; then
+              uv run --no-project pyghostboard --help
+              uv run --no-project python -c \
+                "from pyghostboard.domain import Match, RuleSet; print(Match, RuleSet.standard())"
+              uv run --no-project python -c \
+                "from pyghostboard.adapters.recording import MatchRecorder; recorder = MatchRecorder(None); recorder.discard()"
+              exit 0
+            fi
+            sleep 6
+          done
+          exit 1
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: smoke-testpypi
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pyghostboard
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1

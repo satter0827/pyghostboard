@@ -47,6 +47,8 @@ Run the fast checks while implementing:
 uv run ruff format --check .
 uv run ruff check .
 uv run mypy
+uv run lint-imports
+uv run pytest tests/structure
 uv run pytest tests/unit
 ```
 
@@ -64,6 +66,9 @@ uv audit --locked --preview-features audit-command
 
 `uv audit` contacts the configured vulnerability service. A network failure is an environment
 failure, not evidence that dependencies are safe.
+
+Run `uv run python tools/generate_schemas.py` after changing a public JSON model and include the
+generated schema changes in the same pull request.
 
 ## Test boundaries
 

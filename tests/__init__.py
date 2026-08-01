@@ -1,0 +1,1 @@
+"""pyghostboard test suite."""
