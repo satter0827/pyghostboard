@@ -38,8 +38,9 @@ owner performs and records that assessment.
 
 Create every arena run at a new path. `arena run` refuses an existing output directory. `arena
 resume` acquires the same exclusive lock, rejects a completed run, validates the saved configuration
-and durable attempts, and executes only missing indexes. A failed attempt is evidence and is not
-retried automatically.
+and durable attempts, requires the saved package version and source commit to match the current
+installation, and executes only missing indexes. A failed attempt is evidence and is not retried
+automatically.
 
 The root and each attempt directory use mode `0700`; configuration, manifest, lock, result, and
 private record files use mode `0600`. Each attempt directory appears only after its result and
