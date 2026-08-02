@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-08-02
 
 - Add an immutable, configurable Geister domain with validated snapshots and deterministic replay.
 - Add player-specific observations that structurally omit opposing ghost kinds.
@@ -13,8 +13,8 @@
 - Add Rich commands for play, replay, and rule validation.
 - Add English and Japanese arena commands for multi-agent round-robin runs, explicit watch
   viewpoints, interruption-safe resume, and sanitized descriptive analysis.
-- Store each private arena attempt as one atomic directory with exclusive locking, build
-  provenance, optional complete records, and reconstructable progress.
+- Store each private arena attempt as one atomic directory with exclusive locking,
+  provenance-bound resume, optional complete records, and reconstructable progress.
 - Add versioned JSON Schema documents, typed distributions, compatibility CI, and exact-version
   release artifacts without registry publication.
 
