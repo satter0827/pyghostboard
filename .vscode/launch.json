@@ -17,6 +17,57 @@
       "preLaunchTask": "Environment: Sync"
     },
     {
+      "name": "Arena: Watch Example",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pyghostboard.cli",
+      "args": [
+        "arena",
+        "watch",
+        "examples/arena.toml",
+        "--agent",
+        "mcts",
+        "--opponent",
+        "random"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "preLaunchTask": "Environment: Sync"
+    },
+    {
+      "name": "Arena: Run Example",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pyghostboard.cli",
+      "args": [
+        "arena",
+        "run",
+        "examples/arena.toml",
+        "--output",
+        "${input:arenaOutput}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "preLaunchTask": "Environment: Sync"
+    },
+    {
+      "name": "Arena: Resume",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pyghostboard.cli",
+      "args": [
+        "arena",
+        "resume",
+        "${input:arenaOutput}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "preLaunchTask": "Environment: Sync"
+    },
+    {
       "name": "Tests: Current File",
       "type": "debugpy",
       "request": "launch",
@@ -28,6 +79,14 @@
       "console": "integratedTerminal",
       "justMyCode": true,
       "preLaunchTask": "Environment: Sync"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "arenaOutput",
+      "type": "promptString",
+      "description": "Private arena output directory",
+      "default": ".pyghostboard/arena/manual-run"
     }
   ]
 }

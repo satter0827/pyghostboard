@@ -217,3 +217,15 @@ def test_public_facades_export_existing_unique_names() -> None:
         exported = facade.__all__
         assert len(exported) == len(set(exported))
         assert all(hasattr(facade, name) for name in exported)
+
+
+def test_application_arena_facade_is_limited_to_supported_types() -> None:
+    arena_exports = {name for name in application_api.__all__ if "Arena" in name}
+    assert arena_exports == {
+        "ArenaAgent",
+        "ArenaConfig",
+        "ArenaControllerFactory",
+        "ArenaReport",
+        "ArenaRunner",
+        "ArenaStore",
+    }

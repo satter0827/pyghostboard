@@ -33,6 +33,7 @@ def verify_distribution(directory: Path, version: str, expected_commit: str | No
             "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.po",
             "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.mo",
             "pyghostboard/schemas/arena-analysis-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-config-0.1.0.schema.json",
             "pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
             "pyghostboard/schemas/arena-result-0.1.0.schema.json",
         }

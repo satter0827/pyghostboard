@@ -36,15 +36,21 @@ owner performs and records that assessment.
 
 ## Arena results
 
-Create every arena run at a new path. The command refuses an existing output directory and does not
-offer resume or overwrite in schema 0.1.0. The root and `matches` directory use mode `0700`;
-manifest, results, and private records use mode `0600`. A `completed` manifest means every planned
-attempt has one durable result, including failures. An `interrupted` manifest may be analyzed but
-should not be treated as the planned sample size.
+Create every arena run at a new path. `arena run` refuses an existing output directory. `arena
+resume` acquires the same exclusive lock, rejects a completed run, validates the saved configuration
+and durable attempts, and executes only missing indexes. A failed attempt is evidence and is not
+retried automatically.
 
-`results.jsonl` is safe only for the same trusted user as the private match directory because error
-details can describe local commands or process behavior. Move or archive the directory as one
-private unit; do not publish `matches` files with aggregate statistics.
+The root and each attempt directory use mode `0700`; configuration, manifest, lock, result, and
+private record files use mode `0600`. Each attempt directory appears only after its result and
+optional complete record are synced and atomically promoted. A `completed` manifest means every
+planned attempt has one durable result, including failures. An interrupted directory may be
+analyzed but should not be treated as the planned sample size.
+
+The complete arena directory is private because `config.json` contains external commands,
+`result.json` may contain process details, and `match.jsonl` contains hidden state. The table and
+JSON produced by `arena analyze` omit those fields. Move or archive the directory as one private
+unit; share only the sanitized analysis after reviewing agent identifiers and declared revisions.
 
 ## Release artifacts
 

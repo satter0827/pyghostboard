@@ -7,13 +7,21 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from pyghostboard.adapters.recording import RecordHeader
-from pyghostboard.domain import Match, Placement, Player, RuleSet
+from pyghostboard.application.arena import (
+    ArenaConfig,
+    ArenaManifest,
+    ArenaMatchResult,
+    RandomArenaAgent,
+    _build_match_plans,
+    build_arena_report,
+)
+from pyghostboard.domain import Match, OutcomeReason, Placement, Player, RuleSet
 from pyghostboard.protocol import InitializeRequest, ReadyResponse
 from pyghostboard.schemas import SCHEMA_FILES, SCHEMA_NAMES, read_schema
 
 
 def test_all_public_schemas_use_draft_2020_12_and_versioned_ids() -> None:
-    assert len(SCHEMA_NAMES) == 6
+    assert len(SCHEMA_NAMES) == 10
     for name in SCHEMA_NAMES:
         schema = json.loads(read_schema(name))
         assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
@@ -21,7 +29,7 @@ def test_all_public_schemas_use_draft_2020_12_and_versioned_ids() -> None:
             "https://raw.githubusercontent.com/satter0827/pyghostboard/"
             f"v0.1.0/src/pyghostboard/schemas/{name}"
         )
-        assert "$defs" in schema
+        Draft202012Validator.check_schema(schema)
 
 
 def test_unknown_schema_is_rejected() -> None:
@@ -32,6 +40,13 @@ def test_unknown_schema_is_rejected() -> None:
 def test_schema_can_be_read_by_public_name() -> None:
     for public_name, file_name in SCHEMA_FILES.items():
         assert read_schema(public_name) == read_schema(file_name)
+
+
+def test_shareable_arena_analysis_schema_omits_private_execution_fields() -> None:
+    schema = read_schema("arena_analysis")
+    assert '"command"' not in schema
+    assert '"error_detail"' not in schema
+    assert '"record"' not in schema
 
 
 def test_public_examples_conform_to_bundled_schemas() -> None:
@@ -48,6 +63,36 @@ def test_public_examples_conform_to_bundled_schemas() -> None:
             Player.TWO: Placement(good=two[:4], bad=two[4:]),
         },
     )
+    arena_config = ArenaConfig(
+        rounds=1,
+        root_seed=1,
+        agents=(RandomArenaAgent(id="alpha"), RandomArenaAgent(id="beta")),
+        rules=rules,
+    )
+    plan = _build_match_plans(arena_config)[0]
+    arena_result = ArenaMatchResult(
+        **plan.model_dump(),
+        status="completed",
+        winner_agent=plan.player_one_agent,
+        winner_player=Player.ONE,
+        reason=OutcomeReason.ESCAPE,
+        plies=1,
+        record="match.jsonl",
+    )
+    arena_manifest = ArenaManifest(
+        status="running",
+        config_digest="a" * 64,
+        package_version="0.1.0.dev0",
+        source_commit="b" * 40,
+        planned_matches=2,
+        completed_matches=1,
+        failed_matches=0,
+    )
+    arena_report = build_arena_report(
+        arena_config,
+        arena_manifest,
+        (arena_result,),
+    )
     examples = {
         "rules": rules.model_dump(mode="json"),
         "snapshot": match.snapshot().model_dump(mode="json"),
@@ -62,6 +107,10 @@ def test_public_examples_conform_to_bundled_schemas() -> None:
             rules=rules,
         ).model_dump(mode="json"),
         "agent_response": ReadyResponse(request_id=request_id).model_dump(mode="json"),
+        "arena_config": arena_config.model_dump(mode="json"),
+        "arena_manifest": arena_manifest.model_dump(mode="json"),
+        "arena_result": arena_result.model_dump(mode="json"),
+        "arena_analysis": arena_report.model_dump(mode="json"),
     }
     for name, example in examples.items():
         Draft202012Validator(json.loads(read_schema(name))).validate(example)

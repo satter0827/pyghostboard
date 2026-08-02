@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import os
-import re
-import subprocess
 import tempfile
-from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import Field, TypeAdapter
 
-from pyghostboard._build_info import BUILD_COMMIT
 from pyghostboard._platform import require_posix
+from pyghostboard._provenance import package_version as distribution_version
+from pyghostboard._provenance import source_commit
 from pyghostboard.domain.codec import dump_event
 from pyghostboard.domain.match import Match
 from pyghostboard.domain.models import (
@@ -55,8 +53,8 @@ class MatchRecorder:
         self._destination = destination
         self._overwrite = overwrite
         header = RecordHeader(
-            package_version=package_version or version("pyghostboard"),
-            main_commit_sha=main_commit_sha or _source_commit(),
+            package_version=package_version or distribution_version(),
+            main_commit_sha=main_commit_sha or source_commit(),
         )
         directory: Path | None = None
         if destination is not None:
@@ -119,24 +117,6 @@ def read_record(path: Path) -> MatchRecord:
         raise ValueError("match_started can only appear once")
     Match.replay(events[0], actions)
     return MatchRecord(header=lines[0], events=events)
-
-
-def _source_commit() -> str:
-    if BUILD_COMMIT is not None:
-        return BUILD_COMMIT
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=Path(__file__).resolve().parent,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    commit = result.stdout.strip()
-    if result.returncode != 0 or re.fullmatch(r"[0-9a-f]{40}", commit) is None:
-        raise RuntimeError(
-            "build provenance is unavailable; set it when constructing MatchRecorder"
-        )
-    return commit
 
 
 __all__ = [

@@ -1,6 +1,6 @@
 {
   "$defs": {
-    "AgentAnalysis": {
+    "ArenaAgentReport": {
       "additionalProperties": false,
       "properties": {
         "agent_id": {
@@ -68,7 +68,68 @@
         "player_two_wins",
         "player_two_win_rate"
       ],
-      "title": "AgentAnalysis",
+      "title": "ArenaAgentReport",
+      "type": "object"
+    },
+    "ArenaPairReport": {
+      "additionalProperties": false,
+      "properties": {
+        "completed_games": {
+          "minimum": 0,
+          "title": "Completed Games",
+          "type": "integer"
+        },
+        "first_agent": {
+          "title": "First Agent",
+          "type": "string"
+        },
+        "first_sweeps": {
+          "minimum": 0,
+          "title": "First Sweeps",
+          "type": "integer"
+        },
+        "first_wins": {
+          "minimum": 0,
+          "title": "First Wins",
+          "type": "integer"
+        },
+        "incomplete_rounds": {
+          "minimum": 0,
+          "title": "Incomplete Rounds",
+          "type": "integer"
+        },
+        "second_agent": {
+          "title": "Second Agent",
+          "type": "string"
+        },
+        "second_sweeps": {
+          "minimum": 0,
+          "title": "Second Sweeps",
+          "type": "integer"
+        },
+        "second_wins": {
+          "minimum": 0,
+          "title": "Second Wins",
+          "type": "integer"
+        },
+        "split_rounds": {
+          "minimum": 0,
+          "title": "Split Rounds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "first_agent",
+        "second_agent",
+        "completed_games",
+        "first_wins",
+        "second_wins",
+        "first_sweeps",
+        "split_rounds",
+        "second_sweeps",
+        "incomplete_rounds"
+      ],
+      "title": "ArenaPairReport",
       "type": "object"
     },
     "OutcomeReason": {
@@ -84,11 +145,11 @@
   "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-analysis-0.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Versioned descriptive statistics without significance claims.",
+  "description": "Shareable descriptive report without private execution details.",
   "properties": {
     "agents": {
       "items": {
-        "$ref": "#/$defs/AgentAnalysis"
+        "$ref": "#/$defs/ArenaAgentReport"
       },
       "title": "Agents",
       "type": "array"
@@ -116,6 +177,18 @@
       "title": "Completed Matches",
       "type": "integer"
     },
+    "config_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Digest",
+      "type": "string"
+    },
+    "error_codes": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Error Codes",
+      "type": "object"
+    },
     "failed_matches": {
       "minimum": 0,
       "title": "Failed Matches",
@@ -126,6 +199,28 @@
       "default": "0.1.0",
       "title": "Format Version",
       "type": "string"
+    },
+    "incomplete_rounds": {
+      "minimum": 0,
+      "title": "Incomplete Rounds",
+      "type": "integer"
+    },
+    "package_version": {
+      "minLength": 1,
+      "title": "Package Version",
+      "type": "string"
+    },
+    "pairs": {
+      "items": {
+        "$ref": "#/$defs/ArenaPairReport"
+      },
+      "title": "Pairs",
+      "type": "array"
+    },
+    "planned_matches": {
+      "minimum": 2,
+      "title": "Planned Matches",
+      "type": "integer"
     },
     "player_one_win_rate": {
       "maximum": 1,
@@ -149,6 +244,20 @@
       "title": "Player Two Wins",
       "type": "integer"
     },
+    "source_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Source Commit",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "interrupted"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
     "victory_reasons": {
       "additionalProperties": {
         "type": "integer"
@@ -161,16 +270,24 @@
     }
   },
   "required": [
+    "status",
+    "config_digest",
+    "package_version",
+    "source_commit",
+    "planned_matches",
     "attempted_matches",
     "completed_matches",
     "failed_matches",
     "agents",
+    "pairs",
     "player_one_wins",
     "player_one_win_rate",
     "player_two_wins",
     "player_two_win_rate",
-    "victory_reasons"
+    "victory_reasons",
+    "error_codes",
+    "incomplete_rounds"
   ],
-  "title": "ArenaAnalysis",
+  "title": "ArenaReport",
   "type": "object"
 }

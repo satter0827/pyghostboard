@@ -1,21 +1,19 @@
 format_version = "0.1.0"
 rounds = 2
 root_seed = 20260801
-watch_agent = "mcts"
+recording = "all"
 
 [[agents]]
 id = "mcts"
-policy = "mcts"
-
-[[agents]]
-id = "random"
-policy = "random"
-
-[search]
+kind = "mcts"
 iterations = 64
 exploration_weight = 1.4142135623730951
 rollout_plies = 48
 setup_candidate_limit = 256
+
+[[agents]]
+id = "random"
+kind = "random"
 
 [limits]
 agent_timeout = 10.0

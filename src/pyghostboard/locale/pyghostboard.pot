@@ -37,6 +37,9 @@ msgstr ""
 msgid "Agent completed a full match successfully."
 msgstr ""
 
+msgid "Agent viewpoint."
+msgstr ""
+
 msgid "Analyze descriptive arena results."
 msgstr ""
 
@@ -88,6 +91,9 @@ msgstr ""
 msgid "Completed"
 msgstr ""
 
+msgid "Configured round to watch."
+msgstr ""
+
 msgid "Count"
 msgstr ""
 
@@ -97,13 +103,25 @@ msgstr ""
 msgid "Error"
 msgstr ""
 
+msgid "Error code"
+msgstr ""
+
 msgid "External AI argument; repeat once for each argument."
 msgstr ""
 
 msgid "Failed"
 msgstr ""
 
+msgid "Failure reasons"
+msgstr ""
+
+msgid "First sweeps"
+msgstr ""
+
 msgid "Games"
+msgstr ""
+
+msgid "Incomplete paired rounds"
 msgstr ""
 
 #, python-brace-format
@@ -136,10 +154,19 @@ msgstr ""
 msgid "New private result directory."
 msgstr ""
 
+msgid "Opponent agent."
+msgstr ""
+
 msgid "Options"
 msgstr ""
 
 msgid "Output format: table or json."
+msgstr ""
+
+msgid "Pair"
+msgstr ""
+
+msgid "Pair results"
 msgstr ""
 
 msgid "Play and inspect pyghostboard matches."
@@ -152,6 +179,9 @@ msgid "Player one"
 msgstr ""
 
 msgid "Player one win rate"
+msgstr ""
+
+msgid "Player side assigned to the watched agent."
 msgstr ""
 
 msgid "Player two"
@@ -186,10 +216,19 @@ msgstr ""
 msgid "Replayed {plies} ply"
 msgstr ""
 
-msgid "Run a deterministic AI arena."
+msgid "Resume the missing attempts in an arena."
+msgstr ""
+
+msgid "Run a new deterministic AI arena."
+msgstr ""
+
+msgid "Run, resume, watch, and analyze AI experiments."
 msgstr ""
 
 msgid "Save the private match record."
+msgstr ""
+
+msgid "Second sweeps"
 msgstr ""
 
 msgid "Seconds between automatically replayed moves."
@@ -199,6 +238,9 @@ msgid "Seed for reproducible AI decisions."
 msgstr ""
 
 msgid "Show this message and exit."
+msgstr ""
+
+msgid "Splits"
 msgstr ""
 
 msgid "TOML rule configuration."
@@ -240,7 +282,7 @@ msgstr ""
 msgid "Wait for input after each move."
 msgstr ""
 
-msgid "Watch one AI match from one configured viewpoint."
+msgid "Watch one configured AI pairing."
 msgstr ""
 
 msgid "Win rate"

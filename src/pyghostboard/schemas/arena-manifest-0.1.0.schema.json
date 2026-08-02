@@ -2,26 +2,23 @@
   "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "Atomically replaced progress marker for one private result directory.",
+  "description": "Private, atomically replaced progress summary.",
   "properties": {
-    "agent_ids": {
-      "maxItems": 2,
-      "minItems": 2,
-      "prefixItems": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "string"
-        }
-      ],
-      "title": "Agent Ids",
-      "type": "array"
+    "attempts_directory": {
+      "const": "attempts",
+      "default": "attempts",
+      "title": "Attempts Directory",
+      "type": "string"
     },
     "completed_matches": {
       "minimum": 0,
       "title": "Completed Matches",
       "type": "integer"
+    },
+    "config_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Digest",
+      "type": "string"
     },
     "failed_matches": {
       "minimum": 0,
@@ -34,10 +31,9 @@
       "title": "Format Version",
       "type": "string"
     },
-    "matches_directory": {
-      "const": "matches",
-      "default": "matches",
-      "title": "Matches Directory",
+    "package_version": {
+      "minLength": 1,
+      "title": "Package Version",
       "type": "string"
     },
     "planned_matches": {
@@ -45,20 +41,10 @@
       "title": "Planned Matches",
       "type": "integer"
     },
-    "results_file": {
-      "const": "results.jsonl",
-      "default": "results.jsonl",
-      "title": "Results File",
+    "source_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Source Commit",
       "type": "string"
-    },
-    "root_seed": {
-      "title": "Root Seed",
-      "type": "integer"
-    },
-    "rounds": {
-      "minimum": 1,
-      "title": "Rounds",
-      "type": "integer"
     },
     "status": {
       "enum": [
@@ -72,9 +58,9 @@
   },
   "required": [
     "status",
-    "root_seed",
-    "rounds",
-    "agent_ids",
+    "config_digest",
+    "package_version",
+    "source_commit",
     "planned_matches",
     "completed_matches",
     "failed_matches"

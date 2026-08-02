@@ -90,21 +90,24 @@ kinds. See the runnable [`examples/external_agent.py`](examples/external_agent.p
 
 ## Analyze matches
 
-[`examples/arena.toml`](examples/arena.toml) explicitly declares two AIs, rounds, root seed, rules,
-search settings, execution limits, and the watch viewpoint.
+[`examples/arena.toml`](examples/arena.toml) declares two or more AIs, per-agent search settings,
+rounds per pairing, a root seed, rules, recording policy, and execution limits.
 
 ```shell
-pyghostboard watch examples/arena.toml
-pyghostboard arena examples/arena.toml --output results/
-pyghostboard analyze results/
-pyghostboard analyze results/ --format json
+pyghostboard arena watch examples/arena.toml --agent mcts --opponent random
+pyghostboard arena run examples/arena.toml --output results/
+pyghostboard arena analyze results/
+pyghostboard arena analyze results/ --format json
+# after an interruption
+pyghostboard arena resume results/
 ```
 
-Each round swaps the two AIs between player one and player two. Seeds are derived from the root
-seed, round, and AI identifier with SHA-256. The private `0700` result directory stores one existing
-private match record per successful game plus versioned manifest and result files. Analysis reports
-completion and failure counts, AI and side win rates, victory reasons, and average plies. These are
-descriptive statistics; pyghostboard does not claim statistical significance.
+Every pair of configured AIs plays two side-swapped games per round. Seeds are derived from the root
+seed, pairing, round, and AI identifier with SHA-256. The private `0700` result directory atomically
+stores one attempt directory per game and can resume only missing attempts. Analysis reports run,
+agent, side, pairing, paired-round, victory-reason, failure-code, and ply summaries without exposing
+commands, local paths, process details, or private records. These are descriptive statistics;
+pyghostboard does not claim rankings or statistical significance.
 
 ## Development
 

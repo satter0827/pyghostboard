@@ -41,7 +41,7 @@ Passing automation never substitutes for a required human decision or manual pro
 | FR-007 | English/Japanese CLI, input, TTY fallback, replay, and installed-wheel tests | Usability review of prompts, names, translations, and errors |
 | FR-008 | Recorder promotion, overwrite, discard, and replay tests | Destination permission and retention review |
 | FR-009, QR-007 | Schema generation and conformance; distribution and release-verifier tests | Compatibility decision for each format-version change |
-| FR-010, FR-011, QR-009 | Arena planning, process, persistence, Schema, CLI, and analysis tests | Experiment interpretation and private-directory review |
+| FR-010, FR-011, QR-009 | Arena pairing, process, atomic attempt, resume, Schema, CLI, and analysis tests | Experiment interpretation, external revision, and private-directory review |
 | QR-002 | Import Linter and architecture structure tests | Review of new package boundaries |
 | QR-006 | Main compatibility matrix | Decision to add or remove a supported platform or Python version |
 | QR-008 | Required pull-request checks | Review that evidence covers the changed requirement |

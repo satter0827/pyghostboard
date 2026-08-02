@@ -1,4 +1,4 @@
-"""AI experiment orchestration built from application and adapter contracts."""
+"""CLI assembly for arena application use cases."""
 
 from __future__ import annotations
 
@@ -9,90 +9,108 @@ from uuid import uuid4
 from rich.console import Console
 
 from pyghostboard.adapters.ai import SubprocessAgentController
-from pyghostboard.adapters.arena import ArenaOutput, read_arena_results
+from pyghostboard.adapters.arena import ArenaOutput, read_arena
 from pyghostboard.adapters.config import RuntimeSettings
 from pyghostboard.adapters.recording import MatchRecorder
 from pyghostboard.application.arena import (
-    ArenaAgentSpec,
-    ArenaAnalysis,
+    ArenaAgent,
     ArenaConfig,
-    ArenaManifest,
-    ArenaMatchPlan,
-    ArenaMatchResult,
-    analyze_results,
-    build_match_plans,
+    ArenaReport,
+    ArenaRunner,
+    ExternalArenaAgent,
+    MctsArenaAgent,
+    build_arena_report,
 )
-from pyghostboard.application.runner import (
-    MatchObserver,
-    MatchResult,
-    MatchRunner,
-    MatchSpec,
-    PlayerController,
-    PrivateEventSink,
-)
-from pyghostboard.application.service import InMemoryMatchStore, MatchAborted, MatchService
+from pyghostboard.application.runner import MatchRunner, MatchSpec, PlayerController
+from pyghostboard.application.service import InMemoryMatchStore, MatchService
 from pyghostboard.cli.display import MatchDisplay, supports_live
 from pyghostboard.domain.models import Player, RuleSet
 
 
-async def run_arena(config: ArenaConfig, root: Path) -> ArenaManifest:
-    """Run every planned game and durably append each completed attempt."""
-    output = ArenaOutput.create(root, config)
-    agents = {agent.id: agent for agent in config.agents}
-    try:
-        for plan in build_match_plans(config):
-            recorder = MatchRecorder(output.record_path(plan.match_index))
-            try:
-                result = await _run_plan(config, plan, agents, private_events=recorder)
-                destination = recorder.finalize()
-                assert destination is not None
-                winner_agent = (
-                    plan.player_one_agent
-                    if result.outcome.winner is Player.ONE
-                    else plan.player_two_agent
+class SubprocessArenaControllerFactory:
+    """Create isolated controllers from validated arena agent settings."""
+
+    def __init__(self, config: ArenaConfig) -> None:
+        self._config = config
+
+    def create(self, agent: ArenaAgent) -> PlayerController:
+        limits = self._config.limits
+        return SubprocessAgentController(
+            self._command(agent),
+            timeout=limits.agent_timeout,
+            max_message_bytes=limits.agent_max_message_bytes,
+            max_stderr_bytes=limits.agent_max_stderr_bytes,
+        )
+
+    @staticmethod
+    def _command(agent: ArenaAgent) -> list[str]:
+        if isinstance(agent, ExternalArenaAgent):
+            return list(agent.command)
+        command = [
+            sys.executable,
+            "-m",
+            "pyghostboard.agent_runner",
+            "--policy",
+            agent.kind,
+        ]
+        if isinstance(agent, MctsArenaAgent):
+            command.extend(
+                (
+                    "--iterations",
+                    str(agent.iterations),
+                    "--exploration-weight",
+                    str(agent.exploration_weight),
+                    "--rollout-plies",
+                    str(agent.rollout_plies),
+                    "--setup-candidate-limit",
+                    str(agent.setup_candidate_limit),
                 )
-                persisted = ArenaMatchResult(
-                    **plan.model_dump(),
-                    status="completed",
-                    winner_agent=winner_agent,
-                    winner_player=result.outcome.winner,
-                    reason=result.outcome.reason,
-                    plies=result.plies,
-                    record=f"matches/{destination.name}",
-                )
-            except MatchAborted as error:
-                recorder.discard()
-                persisted = ArenaMatchResult(
-                    **plan.model_dump(),
-                    status="failed",
-                    error_code=error.reason.value,
-                    error_detail=str(error),
-                )
-            output.append(persisted)
-    except BaseException:
-        output.finish("interrupted")
-        raise
-    output.finish("completed")
-    return output.manifest
+            )
+        return command
 
 
-async def watch_match(config: ArenaConfig, console: Console) -> None:
-    """Run one planned game while displaying only the configured agent's view."""
-    plan = build_match_plans(config)[0]
-    agents = {agent.id: agent for agent in config.agents}
-    observer_player = Player.ONE if plan.player_one_agent == config.watch_agent else Player.TWO
+async def run_new_arena(config: ArenaConfig, root: Path) -> ArenaReport:
+    """Create and complete one new private arena."""
+    with ArenaOutput.create(root, config, MatchRecorder) as output:
+        return await ArenaRunner(SubprocessArenaControllerFactory(config), output).run(config)
+
+
+async def resume_arena(root: Path) -> ArenaReport:
+    """Resume only the missing attempts in one interrupted arena."""
+    with ArenaOutput.resume(root, MatchRecorder) as output:
+        config = output.config
+        return await ArenaRunner(SubprocessArenaControllerFactory(config), output).run(config)
+
+
+async def watch_match(
+    config: ArenaConfig,
+    console: Console,
+    *,
+    agent_id: str,
+    opponent_id: str,
+    round_index: int,
+    side: Player,
+) -> None:
+    """Run one configured pairing while displaying the selected agent view."""
     display = MatchDisplay(console, supports_live(console))
     display.start()
     try:
-        await _run_plan(
+        await ArenaRunner(SubprocessArenaControllerFactory(config)).watch(
             config,
-            plan,
-            agents,
+            agent_id=agent_id,
+            opponent_id=opponent_id,
+            round_index=round_index,
+            side=side,
             observer=display,
-            observer_player=observer_player,
         )
     finally:
         display.close()
+
+
+def analyze_directory(root: Path) -> ArenaReport:
+    """Validate private attempts and return a sanitized report."""
+    stored, manifest, results = read_arena(root)
+    return build_arena_report(stored.config, manifest, results)
 
 
 async def check_external_agent(command: list[str], settings: RuntimeSettings) -> None:
@@ -124,69 +142,10 @@ async def check_external_agent(command: list[str], settings: RuntimeSettings) ->
     )
 
 
-def analyze_directory(root: Path) -> ArenaAnalysis:
-    manifest, results = read_arena_results(root)
-    return analyze_results(manifest.agent_ids, results)
-
-
-async def _run_plan(
-    config: ArenaConfig,
-    plan: ArenaMatchPlan,
-    agents: dict[str, ArenaAgentSpec],
-    *,
-    observer: MatchObserver | None = None,
-    observer_player: Player = Player.ONE,
-    private_events: PrivateEventSink | None = None,
-) -> MatchResult:
-    limits = config.limits
-    controllers: dict[Player, PlayerController] = {
-        Player.ONE: _controller(agents[plan.player_one_agent], config),
-        Player.TWO: _controller(agents[plan.player_two_agent], config),
-    }
-    return await MatchRunner(MatchService(InMemoryMatchStore())).run(
-        MatchSpec(
-            match_id=plan.match_id,
-            rules=config.rules,
-            player_one_seed=plan.player_one_seed,
-            player_two_seed=plan.player_two_seed,
-            max_plies=limits.max_plies,
-            observer_player=observer_player,
-        ),
-        controllers,
-        observer=observer,
-        private_events=private_events,
-    )
-
-
-def _controller(agent: ArenaAgentSpec, config: ArenaConfig) -> SubprocessAgentController:
-    command = list(agent.command) if agent.command is not None else _policy_command(agent, config)
-    limits = config.limits
-    return SubprocessAgentController(
-        command,
-        timeout=limits.agent_timeout,
-        max_message_bytes=limits.agent_max_message_bytes,
-        max_stderr_bytes=limits.agent_max_stderr_bytes,
-    )
-
-
-def _policy_command(agent: ArenaAgentSpec, config: ArenaConfig) -> list[str]:
-    assert agent.policy is not None
-    search = config.search
-    return [
-        sys.executable,
-        "-m",
-        "pyghostboard.agent_runner",
-        "--policy",
-        agent.policy,
-        "--iterations",
-        str(search.iterations),
-        "--exploration-weight",
-        str(search.exploration_weight),
-        "--rollout-plies",
-        str(search.rollout_plies),
-        "--setup-candidate-limit",
-        str(search.setup_candidate_limit),
-    ]
-
-
-__all__ = ["analyze_directory", "check_external_agent", "run_arena", "watch_match"]
+__all__ = [
+    "analyze_directory",
+    "check_external_agent",
+    "resume_arena",
+    "run_new_arena",
+    "watch_match",
+]
