@@ -7,10 +7,9 @@ import os
 import shutil
 import tempfile
 import tomllib
-from collections.abc import Callable
 from pathlib import Path
 from types import TracebackType
-from typing import Literal, Self
+from typing import Literal, Protocol, Self
 
 from pydantic import TypeAdapter
 
@@ -32,6 +31,16 @@ _result_adapter: TypeAdapter[ArenaMatchResult] = TypeAdapter(ArenaMatchResult)
 _TEMPORARY_PREFIX = ".attempt-"
 
 
+class _ArenaRecordFactory(Protocol):
+    def __call__(
+        self,
+        destination: Path,
+        *,
+        package_version: str,
+        main_commit_sha: str,
+    ) -> ArenaRecordWriter: ...
+
+
 def load_arena_config(path: Path) -> ArenaConfig:
     """Load one strict, self-contained arena TOML document."""
     return ArenaConfig.model_validate(tomllib.loads(path.read_text(encoding="utf-8")))
@@ -46,7 +55,7 @@ class ArenaOutput:
         stored: ArenaStoredConfig,
         manifest: ArenaManifest,
         lock_descriptor: int,
-        record_factory: Callable[[Path], ArenaRecordWriter],
+        record_factory: _ArenaRecordFactory,
     ) -> None:
         self.root = root
         self.attempts = root / manifest.attempts_directory
@@ -64,7 +73,7 @@ class ArenaOutput:
         cls,
         root: Path,
         config: ArenaConfig,
-        record_factory: Callable[[Path], ArenaRecordWriter],
+        record_factory: _ArenaRecordFactory,
     ) -> ArenaOutput:
         config = _normalize_config(config)
         root.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -101,12 +110,16 @@ class ArenaOutput:
         return output
 
     @classmethod
-    def resume(cls, root: Path, record_factory: Callable[[Path], ArenaRecordWriter]) -> ArenaOutput:
+    def resume(cls, root: Path, record_factory: _ArenaRecordFactory) -> ArenaOutput:
         lock_descriptor = _acquire_lock(root / "run.lock")
         try:
             stored, manifest, _ = read_arena(root)
             if manifest.status == "completed":
                 raise ValueError("a completed arena cannot be resumed")
+            current_provenance = (package_version(), source_commit())
+            stored_provenance = (stored.package_version, stored.source_commit)
+            if current_provenance != stored_provenance:
+                raise ValueError("arena build provenance does not match the current installation")
         except BaseException:
             fcntl.flock(lock_descriptor, fcntl.LOCK_UN)
             os.close(lock_descriptor)
@@ -192,7 +205,11 @@ class _FilesystemAttempt:
         self._temporary = temporary
         self._destination = destination
         self._recorder: ArenaRecordWriter | None = (
-            output._record_factory(temporary / "match.jsonl")
+            output._record_factory(
+                temporary / "match.jsonl",
+                package_version=output._stored.package_version,
+                main_commit_sha=output._stored.source_commit,
+            )
             if output.config.recording == "all"
             else None
         )

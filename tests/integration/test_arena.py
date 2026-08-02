@@ -13,8 +13,9 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
+import pyghostboard.adapters.arena as arena_adapter
 from pyghostboard.adapters.arena import ArenaOutput, read_arena
-from pyghostboard.adapters.recording import MatchRecorder
+from pyghostboard.adapters.recording import MatchRecorder, read_record
 from pyghostboard.application.arena import (
     ArenaConfig,
     ArenaExecutionLimits,
@@ -83,6 +84,9 @@ def test_arena_run_analyze_watch_and_agent_check_commands(tmp_path: Path) -> Non
     assert all(
         stat.S_IMODE((path / "result.json").stat().st_mode) == 0o600 for path in attempt_paths
     )
+    record_header = read_record(attempt_paths[0] / "match.jsonl").header
+    assert record_header.package_version == stored.package_version
+    assert record_header.main_commit_sha == stored.source_commit
 
     english_json = StringIO()
     japanese_json = StringIO()
@@ -220,6 +224,18 @@ def test_arena_lock_and_completed_resume_are_rejected(tmp_path: Path) -> None:
     asyncio.run(run_new_arena(config, completed_root))
     with pytest.raises(ValueError, match="completed arena cannot be resumed"):
         ArenaOutput.resume(completed_root, MatchRecorder)
+
+
+def test_resume_rejects_a_different_build_provenance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "different-build"
+    with ArenaOutput.create(root, _random_config(), MatchRecorder) as output:
+        output.update_status("interrupted")
+
+    monkeypatch.setattr(arena_adapter, "package_version", lambda: "9.9.9")
+    with pytest.raises(ValueError, match="build provenance"):
+        ArenaOutput.resume(root, MatchRecorder)
 
 
 def test_resume_rebuilds_a_stale_manifest_from_attempts(tmp_path: Path) -> None:
