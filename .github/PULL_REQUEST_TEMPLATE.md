@@ -10,6 +10,11 @@ Identify the responsibility or boundary that owns the behavior.
 
 Describe the behavior, tests, configuration, and documentation changed together.
 
+## Requirements and design
+
+List affected `FR-###` or `QR-###` requirements and the design documents changed with them. Write
+`None` when the change does not affect a released contract.
+
 ## Scope
 
 List affected areas and anything intentionally left outside this pull request.
@@ -22,14 +27,30 @@ List affected areas and anything intentionally left outside this pull request.
 - [ ] Repository or CI
 - [ ] Documentation only
 
-## Validation
+## Evidence
+
+### Automated
 
 List the exact commands or scenarios used to validate the change.
+
+### Human decisions
+
+Record decisions that require judgment, including the reviewer and completion evidence. Write
+`None` when no human-only decision applies.
+
+### Manual procedures
+
+Record the owner, trigger, inputs, completion condition, and durable evidence for any manual work.
+Write `None` when no manual procedure applies.
+
+## Review
+
+Summarize resolved Review Gate findings or state that the latest material change had no findings.
 
 ## Checklist
 
 - [ ] The pull request has one coherent purpose.
 - [ ] Tests protect the changed contract, invariant, or reproduced failure.
-- [ ] Architecture documentation is updated when a dependency boundary changes.
+- [ ] Implemented contracts and their design documents change together.
 - [ ] Formatting, linting, typing, and relevant tests pass.
 - [ ] No secrets, generated caches, or unrelated changes are included.

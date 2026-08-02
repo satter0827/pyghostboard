@@ -6,6 +6,10 @@ from pathlib import Path
 SCHEMA_NAMES = (
     "agent-request-0.1.0.schema.json",
     "agent-response-0.1.0.schema.json",
+    "arena-analysis-0.1.0.schema.json",
+    "arena-config-0.1.0.schema.json",
+    "arena-manifest-0.1.0.schema.json",
+    "arena-result-0.1.0.schema.json",
     "event-0.1.0.schema.json",
     "record-0.1.0.schema.json",
     "rules-0.1.0.schema.json",
@@ -14,6 +18,10 @@ SCHEMA_NAMES = (
 SCHEMA_FILES = {
     "agent_request": "agent-request-0.1.0.schema.json",
     "agent_response": "agent-response-0.1.0.schema.json",
+    "arena_analysis": "arena-analysis-0.1.0.schema.json",
+    "arena_config": "arena-config-0.1.0.schema.json",
+    "arena_manifest": "arena-manifest-0.1.0.schema.json",
+    "arena_result": "arena-result-0.1.0.schema.json",
     "event": "event-0.1.0.schema.json",
     "record": "record-0.1.0.schema.json",
     "rules": "rules-0.1.0.schema.json",

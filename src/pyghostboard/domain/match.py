@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -10,7 +10,6 @@ from pyghostboard.domain.models import (
     Action,
     ActionPlayed,
     CapturedPiece,
-    Escape,
     GameOutcome,
     GhostKind,
     MatchStarted,
@@ -26,6 +25,7 @@ from pyghostboard.domain.models import (
     RuleSet,
     Square,
 )
+from pyghostboard.domain.position import Position, PositionError
 
 
 class DomainError(ValueError):
@@ -128,36 +128,7 @@ class Match:
         return MatchStarted(snapshot=self._snapshot)
 
     def legal_actions(self) -> tuple[Action, ...]:
-        if self.outcome is not None:
-            return ()
-        occupied = {
-            piece.square: piece for piece in self._snapshot.pieces if piece.square is not None
-        }
-        actions: list[Action] = []
-        for piece in self._living(self.current_player):
-            assert piece.square is not None
-            for vector in self._snapshot.rules.movement:
-                destination = (
-                    Square(
-                        x=piece.square.x + vector.dx,
-                        y=piece.square.y + vector.dy,
-                    )
-                    if self._on_board(piece.square.x + vector.dx, piece.square.y + vector.dy)
-                    else None
-                )
-                if destination is None:
-                    continue
-                target = occupied.get(destination)
-                if target is None or target.owner is not piece.owner:
-                    actions.append(Move(source=piece.square, destination=destination))
-            if (
-                OutcomeReason.ESCAPE in self._snapshot.rules.victory_conditions
-                and piece.kind is GhostKind.GOOD
-                and piece.square
-                in {exit_.square for exit_ in self._snapshot.rules.exits(piece.owner)}
-            ):
-                actions.append(Escape(source=piece.square))
-        return tuple(actions)
+        return Position.from_snapshot(self._snapshot).legal_actions()
 
     def view_for(self, player: Player) -> PlayerView:
         own = tuple(
@@ -195,22 +166,18 @@ class Match:
         )
 
     def play(self, player: Player, action: Action) -> Transition:
-        if self.outcome is not None:
-            raise IllegalAction("the match has already finished")
-        if player is not self.current_player:
-            raise IllegalAction("the player is not active")
-        if action not in self.legal_actions():
-            raise IllegalAction("the action is not legal")
+        try:
+            position_transition = Position.from_snapshot(self._snapshot).play(player, action)
+        except PositionError as error:
+            raise IllegalAction(str(error)) from error
         pieces = list(self._snapshot.pieces)
         moving_index = self._piece_index(player, action.source)
         moving = pieces[moving_index]
-        captured: CapturedPiece | None = None
-        outcome: GameOutcome | None = None
+        captured = position_transition.captured
         if isinstance(action, Move):
             target_index = self._optional_piece_index(action.destination)
             if target_index is not None:
                 target = pieces[target_index]
-                captured = CapturedPiece(owner=target.owner, kind=target.kind)
                 pieces[target_index] = target.model_copy(
                     update={
                         "square": None,
@@ -219,7 +186,6 @@ class Match:
                     }
                 )
             pieces[moving_index] = moving.model_copy(update={"square": action.destination})
-            outcome = self._capture_outcome(player, pieces)
         else:
             pieces[moving_index] = moving.model_copy(
                 update={
@@ -228,14 +194,13 @@ class Match:
                     "removed_at": moving.square,
                 }
             )
-            outcome = GameOutcome(winner=player, reason=OutcomeReason.ESCAPE)
         revision = self.revision + 1
         snapshot = self._snapshot.model_copy(
             update={
                 "revision": revision,
                 "current_player": player.opponent,
                 "pieces": tuple(pieces),
-                "outcome": outcome,
+                "outcome": position_transition.position.outcome,
             }
         )
         event = ActionPlayed(
@@ -243,23 +208,9 @@ class Match:
             player=player,
             action=action,
             captured=captured,
-            outcome=outcome,
+            outcome=position_transition.position.outcome,
         )
         return Transition(match=Match(snapshot), events=(event,))
-
-    def _capture_outcome(
-        self, player: Player, pieces: Iterable[PrivatePiece]
-    ) -> GameOutcome | None:
-        living = tuple(piece for piece in pieces if piece.square is not None)
-        if OutcomeReason.CAPTURE_GOOD in self._snapshot.rules.victory_conditions and not any(
-            piece.owner is player.opponent and piece.kind is GhostKind.GOOD for piece in living
-        ):
-            return GameOutcome(winner=player, reason=OutcomeReason.CAPTURE_GOOD)
-        if OutcomeReason.SACRIFICE_BAD in self._snapshot.rules.victory_conditions and not any(
-            piece.owner is player.opponent and piece.kind is GhostKind.BAD for piece in living
-        ):
-            return GameOutcome(winner=player.opponent, reason=OutcomeReason.SACRIFICE_BAD)
-        return None
 
     def _living(self, player: Player) -> tuple[PrivatePiece, ...]:
         return tuple(
@@ -279,9 +230,6 @@ class Match:
             if piece.square == square:
                 return index
         return None
-
-    def _on_board(self, x: int, y: int) -> bool:
-        return 0 <= x < self._snapshot.rules.width and 0 <= y < self._snapshot.rules.height
 
     @staticmethod
     def _validate_snapshot(snapshot: PrivateMatchSnapshot) -> None:

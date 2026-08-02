@@ -1,0 +1,323 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: pyghostboard 0.1.0\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Aborted."
+msgstr "中止しました。"
+
+msgid "Arguments"
+msgstr "引数"
+
+msgid "Board"
+msgstr "盤面"
+
+msgid "Built-in AI policy: mcts or random."
+msgstr "組込みAIを指定します。mctsまたはrandomを選べます。"
+
+msgid "Captured: {pieces}"
+msgstr "捕獲済み: {pieces}"
+
+msgid "Choose a number, 'b2 c2', or 'b2 exit'"
+msgstr "番号、'b2 c2'、'b2 exit'のいずれかを入力してください"
+
+msgid "Choose distinct squares from the configured starting area."
+msgstr "開始エリアから重複しないマスを選んでください。"
+
+msgid "Choose one of the listed legal actions."
+msgstr "表示された合法手から選んでください。"
+
+msgid "Choose {count} good ghost squares separated by commas"
+msgstr "よいおばけを置くマスを{count}個、カンマ区切りで入力してください"
+
+msgid "Commands"
+msgstr "コマンド"
+
+msgid "Display language: en or ja."
+msgstr "表示言語をenまたはjaで指定します。"
+
+msgid "Error"
+msgstr "エラー"
+
+msgid "External AI argument; repeat once for each argument."
+msgstr "外部AIの引数を1つずつ繰り返して指定します。"
+
+msgid "Invalid configuration: {detail}"
+msgstr "設定が正しくありません: {detail}"
+
+msgid "Invalid value"
+msgstr "値が正しくありません"
+
+msgid "Last move: {move}"
+msgstr "直前の手: {move}"
+
+msgid "Legal actions:"
+msgstr "合法手:"
+
+msgid "Match aborted ({reason}): {detail}"
+msgstr "対局を中止しました ({reason}): {detail}"
+
+msgid "Missing argument"
+msgstr "引数がありません"
+
+msgid "Missing option"
+msgstr "オプションがありません"
+
+msgid "Options"
+msgstr "オプション"
+
+msgid "Play and inspect pyghostboard matches."
+msgstr "pyghostboardの対局を遊び、記録を確認できます。"
+
+msgid "Play as a human against an isolated AI process."
+msgstr "独立したAIプロセスと対局します。"
+
+msgid "Player one"
+msgstr "プレイヤー1"
+
+msgid "Player two"
+msgstr "プレイヤー2"
+
+msgid "Player viewpoint used for replay."
+msgstr "リプレイを表示するプレイヤー視点を指定します。"
+
+msgid "Preparing match..."
+msgstr "対局を準備しています..."
+
+msgid "Press Enter for the next move"
+msgstr "Enterキーで次の手へ進みます"
+
+msgid "Record saved to {path}"
+msgstr "対局記録を{path}へ保存しました"
+
+msgid "Replace an existing record destination."
+msgstr "既存の対局記録を置き換えます。"
+
+msgid "Replay a private match record from one player viewpoint."
+msgstr "非公開の対局記録を1人のプレイヤー視点で再生します。"
+
+msgid "Replayed {plies} ply"
+msgstr "{plies}手を再生しました"
+
+msgid "Save the private match record."
+msgstr "非公開の対局記録を保存します。"
+
+msgid "Seconds between automatically replayed moves."
+msgstr "自動再生する手の間隔を秒で指定します。"
+
+msgid "Seed for reproducible AI decisions."
+msgstr "AIの判断を再現するseedを指定します。"
+
+msgid "Show this message and exit."
+msgstr "このメッセージを表示して終了します。"
+
+msgid "TOML rule configuration."
+msgstr "TOML形式のルール設定を指定します。"
+
+msgid "Try [blue]'{command_path} {help_option}'[/] for help."
+msgstr "詳しくは[blue]'{command_path} {help_option}'[/]を実行してください。"
+
+msgid "Turn: {player} · Ply: {ply}"
+msgstr "手番: {player} · 手数: {ply}"
+
+msgid "Usage:"
+msgstr "使い方:"
+
+msgid "Valid rules: {width}x{height}, {count} ghosts per player"
+msgstr "有効なルールです: {width}x{height}、各プレイヤー{count}体"
+
+msgid "Validate a TOML RuleSet."
+msgstr "TOML形式のRuleSetを検証します。"
+
+msgid "Validate game rule files."
+msgstr "ゲームのルールファイルを検証します。"
+
+msgid "Wait for input after each move."
+msgstr "1手ごとに入力を待ちます。"
+
+msgid "Winner: {player} · Reason: {reason}"
+msgstr "勝者: {player} · 勝因: {reason}"
+
+msgid "[default: {}]"
+msgstr "[既定値: {}]"
+
+msgid "[env var: {}]"
+msgstr "[環境変数: {}]"
+
+msgid "[required]"
+msgstr "[必須]"
+
+msgid "bad ghost"
+msgstr "わるいおばけ"
+
+msgid "capturing all good ghosts"
+msgstr "よいおばけをすべて捕獲"
+
+msgid "escape"
+msgstr "脱出"
+
+msgid "good ghost"
+msgstr "よいおばけ"
+
+msgid "language must be 'en' or 'ja'"
+msgstr "言語は'en'または'ja'で指定してください"
+
+msgid "none"
+msgstr "なし"
+
+msgid "sacrificing all bad ghosts"
+msgstr "わるいおばけをすべて取らせた"
+
+msgid "{player} {kind}"
+msgstr "{player}の{kind}"
+
+msgid "{player} won by {reason}"
+msgstr "{player}の勝ち: {reason}"
+
+msgid "{player}: {source} exits"
+msgstr "{player}: {source}から脱出"
+
+msgid "{player}: {source} to {destination}"
+msgstr "{player}: {source}から{destination}へ移動"
+
+msgid "{source} exits"
+msgstr "{source}から脱出"
+
+msgid "{source} to {destination}"
+msgstr "{source}から{destination}へ移動"
+
+msgid "; captured {kind}"
+msgstr "; {kind}を捕獲"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "AI results"
+msgstr "AI別結果"
+
+msgid "Agent check failed ({reason}): {detail}"
+msgstr "AI検証に失敗しました ({reason}): {detail}"
+
+msgid "Agent completed a full match successfully."
+msgstr "AIは対局を最後まで正常に完了しました。"
+
+msgid "Analyze descriptive arena results."
+msgstr "アリーナ結果の記述統計を表示します。"
+
+msgid "Arena completed: {completed} completed, {failed} failed"
+msgstr "アリーナが完了しました: 完了{completed}件、失敗{failed}件"
+
+msgid "Arena summary"
+msgstr "アリーナ概要"
+
+msgid "As player one"
+msgstr "プレイヤー1時"
+
+msgid "As player two"
+msgstr "プレイヤー2時"
+
+msgid "Average plies"
+msgstr "平均手数"
+
+msgid "Completed"
+msgstr "完了"
+
+msgid "Count"
+msgstr "件数"
+
+msgid "Failed"
+msgstr "失敗"
+
+msgid "Games"
+msgstr "対局数"
+
+msgid "Metric"
+msgstr "指標"
+
+msgid "New private result directory."
+msgstr "新しく作成する非公開の結果ディレクトリを指定します。"
+
+msgid "Output format: table or json."
+msgstr "出力形式をtableまたはjsonで指定します。"
+
+msgid "Player one win rate"
+msgstr "プレイヤー1勝率"
+
+msgid "Player two win rate"
+msgstr "プレイヤー2勝率"
+
+msgid "Reason"
+msgstr "勝因"
+
+msgid "Validate an external AI through one full match."
+msgstr "外部AIを1対局の全工程で検証します。"
+
+msgid "Validate external AI implementations."
+msgstr "外部AIの実装を検証します。"
+
+msgid "Value"
+msgstr "値"
+
+msgid "Victory reasons"
+msgstr "勝因別結果"
+
+msgid "Win rate"
+msgstr "勝率"
+
+msgid "Wins"
+msgstr "勝数"
+
+msgid "at least one --command argument is required"
+msgstr "--commandを1つ以上指定してください"
+
+msgid "Agent viewpoint."
+msgstr "観戦するAIを指定します。"
+
+msgid "Configured round to watch."
+msgstr "観戦するroundを指定します。"
+
+msgid "Error code"
+msgstr "エラーコード"
+
+msgid "Failure reasons"
+msgstr "失敗理由"
+
+msgid "First sweeps"
+msgstr "先のAIの2勝"
+
+msgid "Incomplete paired rounds"
+msgstr "未完了の先後交代round"
+
+msgid "Opponent agent."
+msgstr "対戦相手のAIを指定します。"
+
+msgid "Pair"
+msgstr "対戦組"
+
+msgid "Pair results"
+msgstr "対戦組別結果"
+
+msgid "Player side assigned to the watched agent."
+msgstr "観戦するAIへ割り当てる先後を指定します。"
+
+msgid "Resume the missing attempts in an arena."
+msgstr "アリーナの未実行対局を再開します。"
+
+msgid "Run a new deterministic AI arena."
+msgstr "新しい再現可能なAIアリーナを実行します。"
+
+msgid "Run, resume, watch, and analyze AI experiments."
+msgstr "AI実験を実行、再開、観戦、分析します。"
+
+msgid "Second sweeps"
+msgstr "後のAIの2勝"
+
+msgid "Splits"
+msgstr "1勝1敗"
+
+msgid "Watch one configured AI pairing."
+msgstr "設定したAIの対戦組を1局観戦します。"

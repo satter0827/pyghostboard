@@ -1,0 +1,46 @@
+format_version = "0.1.0"
+rounds = 2
+root_seed = 20260801
+recording = "all"
+
+[[agents]]
+id = "mcts"
+kind = "mcts"
+iterations = 64
+exploration_weight = 1.4142135623730951
+rollout_plies = 48
+setup_candidate_limit = 256
+
+[[agents]]
+id = "random"
+kind = "random"
+
+[limits]
+agent_timeout = 10.0
+agent_max_message_bytes = 1048576
+agent_max_stderr_bytes = 65536
+max_plies = 1000
+
+[rules]
+format_version = "0.1.0"
+width = 6
+height = 6
+good_count = 4
+bad_count = 4
+player_one_start = [
+  { x = 1, y = 0 }, { x = 2, y = 0 }, { x = 3, y = 0 }, { x = 4, y = 0 },
+  { x = 1, y = 1 }, { x = 2, y = 1 }, { x = 3, y = 1 }, { x = 4, y = 1 },
+]
+player_two_start = [
+  { x = 1, y = 4 }, { x = 2, y = 4 }, { x = 3, y = 4 }, { x = 4, y = 4 },
+  { x = 1, y = 5 }, { x = 2, y = 5 }, { x = 3, y = 5 }, { x = 4, y = 5 },
+]
+player_one_exits = [{ square = { x = 0, y = 5 } }, { square = { x = 5, y = 5 } }]
+player_two_exits = [{ square = { x = 0, y = 0 } }, { square = { x = 5, y = 0 } }]
+movement = [
+  { dx = 0, dy = 1 },
+  { dx = 1, dy = 0 },
+  { dx = 0, dy = -1 },
+  { dx = -1, dy = 0 },
+]
+victory_conditions = ["escape", "capture_good", "sacrifice_bad"]

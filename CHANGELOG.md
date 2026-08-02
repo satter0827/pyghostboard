@@ -1,13 +1,20 @@
 # Changelog
 
-## 0.1.0 - 2026-08-01
+## 0.1.0 - 2026-08-02
 
 - Add an immutable, configurable Geister domain with validated snapshots and deterministic replay.
 - Add player-specific observations that structurally omit opposing ghost kinds.
 - Add async persistence ports, optimistic commits, public event projection, and private JSON Lines
   records with build provenance.
-- Add an isolated JSON Lines AI protocol, reproducible bundled random AI, and bounded process I/O.
+- Add transport-independent AI contracts, reproducible random and information-set MCTS policies,
+  an isolated JSON Lines adapter, and bounded process I/O.
+- Enforce one shared AI lifecycle across transports, bound setup sampling before materialization,
+  and keep MCTS hypotheses independent of private persistence models.
 - Add Rich commands for play, replay, and rule validation.
+- Add English and Japanese arena commands for multi-agent round-robin runs, explicit watch
+  viewpoints, interruption-safe resume, and sanitized descriptive analysis.
+- Store each private arena attempt as one atomic directory with exclusive locking,
+  provenance-bound resume, optional complete records, and reconstructable progress.
 - Add versioned JSON Schema documents, typed distributions, compatibility CI, and exact-version
   release artifacts without registry publication.
 

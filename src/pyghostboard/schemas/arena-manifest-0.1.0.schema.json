@@ -1,0 +1,70 @@
+{
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Private, atomically replaced progress summary.",
+  "properties": {
+    "attempts_directory": {
+      "const": "attempts",
+      "default": "attempts",
+      "title": "Attempts Directory",
+      "type": "string"
+    },
+    "completed_matches": {
+      "minimum": 0,
+      "title": "Completed Matches",
+      "type": "integer"
+    },
+    "config_digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Config Digest",
+      "type": "string"
+    },
+    "failed_matches": {
+      "minimum": 0,
+      "title": "Failed Matches",
+      "type": "integer"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "package_version": {
+      "minLength": 1,
+      "title": "Package Version",
+      "type": "string"
+    },
+    "planned_matches": {
+      "minimum": 2,
+      "title": "Planned Matches",
+      "type": "integer"
+    },
+    "source_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Source Commit",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "interrupted"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "status",
+    "config_digest",
+    "package_version",
+    "source_commit",
+    "planned_matches",
+    "completed_matches",
+    "failed_matches"
+  ],
+  "title": "ArenaManifest",
+  "type": "object"
+}

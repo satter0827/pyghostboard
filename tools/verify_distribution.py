@@ -28,6 +28,17 @@ def verify_distribution(directory: Path, version: str, expected_commit: str | No
         )
 
     with zipfile.ZipFile(wheel) as archive:
+        required_package_data = {
+            "pyghostboard/locale/pyghostboard.pot",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.po",
+            "pyghostboard/locale/ja/LC_MESSAGES/pyghostboard.mo",
+            "pyghostboard/schemas/arena-analysis-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-config-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-manifest-0.1.0.schema.json",
+            "pyghostboard/schemas/arena-result-0.1.0.schema.json",
+        }
+        if not required_package_data <= set(archive.namelist()):
+            raise ValueError("wheel does not contain all required package data")
         metadata_names = [
             name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
         ]

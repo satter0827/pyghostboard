@@ -34,16 +34,17 @@ dependencies = [
 ]
 
 [project.scripts]
-pyghostboard = "pyghostboard.cli:app"
+pyghostboard = "pyghostboard.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/satter0827/pyghostboard"
-Documentation = "https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md"
+Documentation = "https://github.com/satter0827/pyghostboard/blob/main/docs/README.md"
 Repository = "https://github.com/satter0827/pyghostboard"
 Issues = "https://github.com/satter0827/pyghostboard/issues"
 
 [dependency-groups]
 dev = [
+    "babel>=2.17,<3",
     "build>=1.2,<2",
     "hatchling>=1.27,<2",
     "hatch-vcs>=0.5,<1",
@@ -58,6 +59,9 @@ dev = [
     "twine>=6,<7",
     "types-jsonschema>=4.25,<5",
 ]
+
+[tool.uv]
+required-version = "==0.12.1"
 
 [build-system]
 requires = ["hatchling>=1.27,<2", "hatch-vcs>=0.5,<1"]
@@ -82,14 +86,31 @@ only-include = [
     "README.md",
     "README.ja.md",
     "SECURITY.md",
-    "docs",
+    "docs/README.md",
+    "docs/design",
     "examples",
     "pyproject.toml",
     "src",
+    "tools/hatch_build.py",
+]
+
+[tool.hatch.build.hooks.custom]
+path = "tools/hatch_build.py"
+
+[tool.quality-gate]
+primary-python = "3.13"
+compatibility = [
+    { os = "ubuntu-24.04", python-version = "3.11", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.12", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.13", scope = "full" },
+    { os = "ubuntu-24.04", python-version = "3.14", scope = "full" },
+    { os = "macos-15", python-version = "3.13", scope = "full" },
+    { os = "windows-2025", python-version = "3.13", scope = "domain" },
 ]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-config --strict-markers"
+cache_dir = ".pyghostboard/cache/pytest"
 testpaths = ["tests"]
 tmp_path_retention_policy = "failed"
 
@@ -107,6 +128,7 @@ layers = [
 ]
 
 [tool.ruff]
+cache-dir = ".pyghostboard/cache/ruff"
 line-length = 100
 src = ["src", "tests"]
 target-version = "py311"
@@ -118,17 +140,38 @@ select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 quote-style = "double"
 
 [tool.mypy]
-files = ["src", "tests"]
+cache_dir = ".pyghostboard/cache/mypy"
+files = ["src", "tests", "scripts", "tools"]
 python_version = "3.11"
 strict = true
 warn_unused_ignores = true
 
+[[tool.mypy.overrides]]
+module = ["hatchling.*"]
+ignore_missing_imports = true
+
 [tool.coverage.run]
 branch = true
+data_file = ".pyghostboard/coverage/data"
 source = ["pyghostboard"]
+omit = [
+    "*/agent_runner.py",
+]
 
 [tool.coverage.report]
 fail_under = 90
 precision = 0
 show_missing = true
 skip_covered = true
+
+[tool.coverage.html]
+directory = ".pyghostboard/coverage/html"
+
+[tool.coverage.json]
+output = ".pyghostboard/coverage/coverage.json"
+
+[tool.coverage.lcov]
+output = ".pyghostboard/coverage/coverage.lcov"
+
+[tool.coverage.xml]
+output = ".pyghostboard/coverage/coverage.xml"

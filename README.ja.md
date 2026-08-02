@@ -3,15 +3,16 @@
 [![CI](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml/badge.svg)](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/satter0827/pyghostboard/blob/main/LICENSE)
 
-pyghostboardは、永続化しやすい型付きGeister domain、別プロセスAI protocol、Rich CUIを提供します。
+pyghostboardは、Geisterを遊ぶ、domainを組み込む、別プロセスAIを作る、再現可能なAI対局を
+分析するための型付きPython packageです。
 
-[English README](https://github.com/satter0827/pyghostboard/blob/main/README.md)
+[English README](README.md)
 
-## インストールと対局
+## 遊ぶ
 
-Python 3.11から3.14に対応します。domain APIはPython対応環境で利用できます。CUI、AIの
-別プロセス隔離、秘密対局記録は、プロセス終了とファイル昇格にPOSIXの保証を利用するため
-macOSとLinuxに対応します。
+Python 3.11から3.14に対応します。domain APIはPython対応環境で利用できます。CLI、AIの
+別プロセス隔離、非公開の対局記録は、POSIXのプロセス終了とファイル処理を使うためmacOSと
+Linuxに対応します。
 
 ```shell
 git clone https://github.com/satter0827/pyghostboard.git
@@ -20,22 +21,25 @@ python -m pip install .
 pyghostboard play --seed 7
 ```
 
-標準形式のwheelとsource archiveを構築しますが、package registryには公開しません。
-現在の`main` commitへ付けた`vX.Y.Z` tagから、厳密に同じ版の成果物をGitHub Actionsで
-構築します。
+既定の対戦相手はMCTSです。再現可能な比較用AIは`--agent random`で選べます。行動は表示された
+番号、`b2 c2`、`b2 exit`のいずれかで入力します。日本語表示は`--language ja`または
+`PYGHOSTBOARD_LANGUAGE=ja`で選べます。
 
-同梱ランダムAIは別プロセスで動作し、担当プレイヤーから見える情報だけを受け取ります。対局記録、
-再生、ルール検証は`pyghostboard --help`で確認できます。外部AIのcommandはshellを介さず、
-次のように引数ごとに指定します。
+![決定的なCLI対局画面](docs/images/cli.svg)
+
+対応するTTYでは1画面をRichで更新します。redirectされた出力、`NO_COLOR`、`TERM=dumb`では
+追記型のplain textへ切り替わります。非公開の対局記録は、どちらかのプレイヤー視点を選び、
+一手送りまたは自動送りで再生できます。
 
 ```shell
-pyghostboard play --ai python --ai /path/to/agent.py
+pyghostboard replay match.jsonl --view two --step
+pyghostboard replay match.jsonl --view one --delay 0.5
 ```
 
-秘密対局記録には両プレイヤーの駒種と配置が含まれます。secretとして保護してください。既存の
-記録先は、`--overwrite-record`を明示しない限り置き換えません。
+非公開の対局記録には両プレイヤーの駒種と配置が含まれます。secretとして保存してください。
+既存の記録先は、`--overwrite-record`を明示した場合だけ置き換えます。
 
-## domainの利用
+## domain APIを使う
 
 ```python
 from uuid import uuid4
@@ -57,36 +61,72 @@ view = match.view_for(Player.ONE)
 match = match.play(Player.ONE, view.legal_actions[0]).match
 ```
 
-信頼済みアプリは`PrivateMatchSnapshot`を直接保存するか、非同期の`MatchService`と
-`MatchStore`を利用できます。公開JSON形式のJSON Schemaもwheelへ同梱します。`RuleSet`で
-変更できるのは盤面、配置領域、出口、全駒共通の移動ベクトル、駒数、既定3勝利条件の組合せ
-だけであり、任意のPythonコードは実行しません。
+信頼済みアプリはimmutableなdomain値を直接使うか、`MatchService`、`MatchRunner`、注入した
+`MatchStore`と`PlayerController` portで永続化した対局を進行できます。公開facadeには型があり、
+versioned JSON Schemaをwheelへ同梱します。
 
-実行時制限は`PYGHOSTBOARD_` prefixの環境変数から注入できます。変数名は`LOG_LEVEL`、
-`AGENT_TIMEOUT`、`AGENT_MAX_MESSAGE_BYTES`、`AGENT_MAX_STDERR_BYTES`、`MAX_PLIES`です。
-たとえば`PYGHOSTBOARD_AGENT_TIMEOUT=5`でAI応答期限を変更できます。
+## AIを作る
+
+最小の外部AIは公開policy runnerを再利用できます。
+
+```python
+import sys
+
+from pyghostboard.agents import RandomAgent, run_agent
+
+run_agent(sys.stdin.buffer, sys.stdout, RandomAgent)
+```
+
+`agent.py`として保存し、lifecycle全体を検証してから対局します。commandの各引数は繰り返して
+指定し、shellを介さず直接渡します。
+
+```shell
+pyghostboard agent check --command python --command agent.py
+pyghostboard play --command python --command agent.py
+```
+
+hostが送るのは公開ルール、担当プレイヤーのview、合法手、seed、lifecycle messageだけです。
+AI wire schema 0.1.0にprivate snapshot、private event、相手の生存駒種は入りません。実行可能な
+例は[`examples/external_agent.py`](examples/external_agent.py)を参照してください。
+
+## 分析する
+
+[`examples/arena.toml`](examples/arena.toml)には2つ以上のAI、AI別の探索設定、対戦組ごとのround数、
+root seed、ルール、記録方針、実行上限を明記しています。
+
+```shell
+pyghostboard arena watch examples/arena.toml --agent mcts --opponent random
+pyghostboard arena run examples/arena.toml --output results/
+pyghostboard arena analyze results/
+pyghostboard arena analyze results/ --format json
+# 中断後
+pyghostboard arena resume results/
+```
+
+設定した全AIの組合せについて、各roundで先後を入れ替えた2局を行います。seedはroot seed、
+対戦組、round、AI識別子からSHA-256で導出します。権限`0700`の非公開result directoryには、
+1局ごとのattempt directoryを原子的に保存し、中断後は未実行分だけを再開します。分析はrun、
+AI、先後、対戦組、paired round、勝因、失敗code、手数の集計を返し、command、local path、
+process詳細、非公開記録は含めません。これは記述統計であり、順位や統計的有意性は主張しません。
 
 ## 開発
 
 ```shell
-git clone https://github.com/satter0827/pyghostboard.git
-cd pyghostboard
 uv sync --locked --group dev
-uv run pytest
+uv run python scripts/release_gate.py check all
 ```
 
-信頼境界と依存方向は[アーキテクチャ](https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md)、
-外部連携は[AI protocol](https://github.com/satter0827/pyghostboard/blob/main/docs/ai-protocol.md)と
-[integration guide](https://github.com/satter0827/pyghostboard/blob/main/docs/integration.md)、検証手順と
-ブランチ運用は[コントリビューションガイド](https://github.com/satter0827/pyghostboard/blob/main/CONTRIBUTING.md)を参照してください。
+要件、architecture、interface、品質、delivery、operationsは[ドキュメント](docs/README.md)、
+reviewとbranchの運用は[コントリビューションガイド](CONTRIBUTING.md)を参照してください。
 
-## 0.1.0の範囲
+## 0.1 seriesの範囲
 
-ローカルの人間対AI、再利用可能なdomain API、秘密情報を含む対局記録、外部AIプロセスを対象とします。
-GUI、ネットワーク対戦、アカウント、実運用向けDB adapterは対象外です。
+ローカルの人間対AI、再利用可能なdomain・application API、外部AI process、非公開の対局記録、
+決定的なarena、記述分析を対象とします。GUI、network matchmaking、account、実運用向けDB
+adapter、package registryへの公開は対象外です。
 
 本プロジェクトは非公式実装です。市販製品の画像や説明書本文は同梱しません。
 
 ## ライセンス
 
-[MIT License](https://github.com/satter0827/pyghostboard/blob/main/LICENSE)で提供します。
+[MIT License](LICENSE)で提供します。

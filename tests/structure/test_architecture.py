@@ -69,11 +69,13 @@ def _layer(module: str) -> int | None:
         return 1
     if module == "pyghostboard.protocol":
         return 1
+    if module == "pyghostboard.agents" or module.startswith("pyghostboard.agents."):
+        return 2
     if module == "pyghostboard.adapters" or module.startswith("pyghostboard.adapters."):
         return 2
-    if module == "pyghostboard.random_agent":
-        return 2
-    if module == "pyghostboard.cli":
+    if module == "pyghostboard.agent_runner":
+        return 3
+    if module == "pyghostboard.cli" or module.startswith("pyghostboard.cli."):
         return 3
     return None
 
@@ -194,8 +196,36 @@ def test_ai_wire_schema_cannot_contain_private_host_models() -> None:
     assert "PrivatePiece" not in schemas
 
 
+def test_agent_policies_do_not_import_private_host_models() -> None:
+    private_names = {"PrivateMatchEvent", "PrivateMatchSnapshot", "PrivatePiece"}
+    violations: list[str] = []
+    for module, path in _modules().items():
+        if not module.startswith("pyghostboard.agents"):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            imported_private = private_names & {alias.name for alias in node.names}
+            if imported_private:
+                violations.append(f"{module}: {sorted(imported_private)}")
+    assert violations == []
+
+
 def test_public_facades_export_existing_unique_names() -> None:
     for facade in (domain_api, application_api):
         exported = facade.__all__
         assert len(exported) == len(set(exported))
         assert all(hasattr(facade, name) for name in exported)
+
+
+def test_application_arena_facade_is_limited_to_supported_types() -> None:
+    arena_exports = {name for name in application_api.__all__ if "Arena" in name}
+    assert arena_exports == {
+        "ArenaAgent",
+        "ArenaConfig",
+        "ArenaControllerFactory",
+        "ArenaReport",
+        "ArenaRunner",
+        "ArenaStore",
+    }

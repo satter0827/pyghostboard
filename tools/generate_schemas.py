@@ -2,12 +2,20 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
 from pydantic import TypeAdapter
 
 from pyghostboard.adapters.recording import RECORD_FORMAT_VERSION, RecordLine
+from pyghostboard.application.arena import (
+    ARENA_FORMAT_VERSION,
+    ArenaConfig,
+    ArenaManifest,
+    ArenaMatchResult,
+    ArenaReport,
+)
 from pyghostboard.domain import (
     RULES_FORMAT_VERSION,
     PrivateMatchEvent,
@@ -22,8 +30,7 @@ SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 SCHEMA_BASE = "https://raw.githubusercontent.com/satter0827/pyghostboard"
 
 
-def main() -> None:
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+def generate_schemas() -> dict[str, str]:
     schemas = {
         f"rules-{RULES_FORMAT_VERSION}.schema.json": (
             RULES_FORMAT_VERSION,
@@ -49,17 +56,59 @@ def main() -> None:
             PROTOCOL_VERSION,
             TypeAdapter(AgentResponse).json_schema(),
         ),
+        f"arena-config-{ARENA_FORMAT_VERSION}.schema.json": (
+            ARENA_FORMAT_VERSION,
+            ArenaConfig.model_json_schema(),
+        ),
+        f"arena-manifest-{ARENA_FORMAT_VERSION}.schema.json": (
+            ARENA_FORMAT_VERSION,
+            ArenaManifest.model_json_schema(),
+        ),
+        f"arena-result-{ARENA_FORMAT_VERSION}.schema.json": (
+            ARENA_FORMAT_VERSION,
+            ArenaMatchResult.model_json_schema(),
+        ),
+        f"arena-analysis-{ARENA_FORMAT_VERSION}.schema.json": (
+            ARENA_FORMAT_VERSION,
+            ArenaReport.model_json_schema(),
+        ),
     }
+    documents: dict[str, str] = {}
     for filename, (version, schema) in schemas.items():
         document = {
             "$schema": SCHEMA_DIALECT,
             "$id": f"{SCHEMA_BASE}/v{version}/src/pyghostboard/schemas/{filename}",
             **schema,
         }
-        (OUTPUT / filename).write_text(
-            json.dumps(document, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        documents[filename] = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    return documents
+
+
+def check_schemas(output: Path = OUTPUT) -> None:
+    stale = [
+        filename
+        for filename, expected in generate_schemas().items()
+        if not (output / filename).is_file()
+        or (output / filename).read_text(encoding="utf-8") != expected
+    ]
+    if stale:
+        raise ValueError(f"generated schemas are stale: {', '.join(sorted(stale))}")
+
+
+def write_schemas(output: Path = OUTPUT) -> None:
+    output.mkdir(parents=True, exist_ok=True)
+    for filename, document in generate_schemas().items():
+        (output / filename).write_text(document, encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true")
+    arguments = parser.parse_args()
+    if arguments.check:
+        check_schemas()
+    else:
+        write_schemas()
 
 
 if __name__ == "__main__":

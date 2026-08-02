@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "OutcomeReason": {
+      "enum": [
+        "escape",
+        "capture_good",
+        "sacrifice_bad"
+      ],
+      "title": "OutcomeReason",
+      "type": "string"
+    },
+    "Player": {
+      "enum": [
+        "one",
+        "two"
+      ],
+      "title": "Player",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-result-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Private stored result for one completed or failed attempt.",
+  "properties": {
+    "error_code": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Code"
+    },
+    "error_detail": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error Detail"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "game_index": {
+      "maximum": 2,
+      "minimum": 1,
+      "title": "Game Index",
+      "type": "integer"
+    },
+    "match_id": {
+      "format": "uuid",
+      "title": "Match Id",
+      "type": "string"
+    },
+    "match_index": {
+      "minimum": 1,
+      "title": "Match Index",
+      "type": "integer"
+    },
+    "pair_index": {
+      "minimum": 1,
+      "title": "Pair Index",
+      "type": "integer"
+    },
+    "player_one_agent": {
+      "title": "Player One Agent",
+      "type": "string"
+    },
+    "player_one_seed": {
+      "minimum": 0,
+      "title": "Player One Seed",
+      "type": "integer"
+    },
+    "player_two_agent": {
+      "title": "Player Two Agent",
+      "type": "string"
+    },
+    "player_two_seed": {
+      "minimum": 0,
+      "title": "Player Two Seed",
+      "type": "integer"
+    },
+    "plies": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Plies"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OutcomeReason"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "record": {
+      "anyOf": [
+        {
+          "const": "match.jsonl",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Record"
+    },
+    "round_index": {
+      "minimum": 1,
+      "title": "Round Index",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "winner_agent": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Winner Agent"
+    },
+    "winner_player": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Player"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "match_index",
+    "pair_index",
+    "round_index",
+    "game_index",
+    "match_id",
+    "player_one_agent",
+    "player_two_agent",
+    "player_one_seed",
+    "player_two_seed",
+    "status"
+  ],
+  "title": "ArenaMatchResult",
+  "type": "object"
+}

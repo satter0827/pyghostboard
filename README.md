@@ -3,16 +3,15 @@
 [![CI](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml/badge.svg)](https://github.com/satter0827/pyghostboard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/satter0827/pyghostboard/blob/main/LICENSE)
 
-pyghostboard is a typed Geister game domain with persistence-friendly APIs, an isolated AI
-protocol, and a rich command-line interface.
+pyghostboard is one typed Python package for playing Geister, embedding its domain, building
+process-isolated AIs, and analyzing reproducible AI matches.
 
-[日本語版 README](https://github.com/satter0827/pyghostboard/blob/main/README.ja.md)
+[日本語版 README](README.ja.md)
 
-## Install and play
+## Play
 
-Python 3.11 through 3.14 is supported. The domain API is portable Python. The CUI, isolated AI
-process, and private recorder require macOS or Linux because their cleanup and file-promotion
-guarantees use POSIX behavior.
+Python 3.11 through 3.14 is supported. The domain API is portable Python. The CLI, isolated AI
+processes, and private records require macOS or Linux for POSIX process cleanup and file handling.
 
 ```shell
 git clone https://github.com/satter0827/pyghostboard.git
@@ -21,22 +20,25 @@ python -m pip install .
 pyghostboard play --seed 7
 ```
 
-The project prepares standard wheel and source archives but does not publish them to a package
-registry. A `vX.Y.Z` tag on the current `main` commit builds an exact-version artifact in GitHub
-Actions.
+MCTS is the default opponent; use `--agent random` for the reproducible baseline. Enter a displayed
+number, `b2 c2`, or `b2 exit` when choosing an action. Use `--language ja` or
+`PYGHOSTBOARD_LANGUAGE=ja` for Japanese.
 
-The bundled random AI runs in a separate process and receives only the information visible to its
-player. Use `pyghostboard --help` for recording, replay, and rule validation options. External AI
-commands are passed as repeated arguments without a shell, for example:
+![Deterministic CLI match screen](docs/images/cli.svg)
+
+A capable TTY gets one updating Rich screen. Redirected output, `NO_COLOR`, and `TERM=dumb` use
+append-only plain text. Replay a private record from either player viewpoint with optional step or
+automatic progression:
 
 ```shell
-pyghostboard play --ai python --ai /path/to/agent.py
+pyghostboard replay match.jsonl --view two --step
+pyghostboard replay match.jsonl --view one --delay 0.5
 ```
 
-Private records contain both players' ghost kinds and placements. Protect them as secrets. Existing
-record destinations are not replaced unless `--overwrite-record` is explicitly supplied.
+Private records contain both players' ghost kinds and placements. Store them as secrets. Existing
+record destinations are replaced only with explicit `--overwrite-record`.
 
-## Use the domain
+## Use the domain API
 
 ```python
 from uuid import uuid4
@@ -58,38 +60,74 @@ view = match.view_for(Player.ONE)
 match = match.play(Player.ONE, view.legal_actions[0]).match
 ```
 
-Trusted applications can persist `PrivateMatchSnapshot` values directly or use the async
-`MatchService` and `MatchStore` port. Bundled JSON Schema documents describe every public wire
-format. `RuleSet` customization is data-only: board dimensions, starting areas, exits, shared
-movement vectors, piece counts, and a subset of the three built-in victory conditions.
+Trusted applications can use immutable domain values directly or coordinate persisted matches with
+`MatchService`, `MatchRunner`, and the injected `MatchStore` and `PlayerController` ports. Public
+facades are typed, and versioned JSON Schemas are bundled in the wheel.
 
-Runtime limits are externally configurable with the `PYGHOSTBOARD_` prefix. The available names
-are `LOG_LEVEL`, `AGENT_TIMEOUT`, `AGENT_MAX_MESSAGE_BYTES`, `AGENT_MAX_STDERR_BYTES`, and
-`MAX_PLIES`. For example, `PYGHOSTBOARD_AGENT_TIMEOUT=5` changes the AI response deadline.
+## Build an AI
+
+The smallest external AI can reuse the public policy runner:
+
+```python
+import sys
+
+from pyghostboard.agents import RandomAgent, run_agent
+
+run_agent(sys.stdin.buffer, sys.stdout, RandomAgent)
+```
+
+Save it as `agent.py`, validate its complete lifecycle, then play against it. Every command argument
+is repeated and passed directly without a shell:
+
+```shell
+pyghostboard agent check --command python --command agent.py
+pyghostboard play --command python --command agent.py
+```
+
+The host sends only public rules, the assigned player's view, legal actions, seed, and lifecycle
+messages. AI wire schema 0.1.0 never contains private snapshots, events, or opposing live ghost
+kinds. See the runnable [`examples/external_agent.py`](examples/external_agent.py).
+
+## Analyze matches
+
+[`examples/arena.toml`](examples/arena.toml) declares two or more AIs, per-agent search settings,
+rounds per pairing, a root seed, rules, recording policy, and execution limits.
+
+```shell
+pyghostboard arena watch examples/arena.toml --agent mcts --opponent random
+pyghostboard arena run examples/arena.toml --output results/
+pyghostboard arena analyze results/
+pyghostboard arena analyze results/ --format json
+# after an interruption
+pyghostboard arena resume results/
+```
+
+Every pair of configured AIs plays two side-swapped games per round. Seeds are derived from the root
+seed, pairing, round, and AI identifier with SHA-256. The private `0700` result directory atomically
+stores one attempt directory per game and can resume only missing attempts. Analysis reports run,
+agent, side, pairing, paired-round, victory-reason, failure-code, and ply summaries without exposing
+commands, local paths, process details, or private records. These are descriptive statistics;
+pyghostboard does not claim rankings or statistical significance.
 
 ## Development
 
 ```shell
-git clone https://github.com/satter0827/pyghostboard.git
-cd pyghostboard
 uv sync --locked --group dev
-uv run pytest
+uv run python scripts/release_gate.py check all
 ```
 
-See [Architecture](https://github.com/satter0827/pyghostboard/blob/main/docs/architecture.md),
-[AI protocol](https://github.com/satter0827/pyghostboard/blob/main/docs/ai-protocol.md), and
-[integration guide](https://github.com/satter0827/pyghostboard/blob/main/docs/integration.md).
-[Contributing](https://github.com/satter0827/pyghostboard/blob/main/CONTRIBUTING.md) describes the
-complete verification and branch workflow.
+See the [documentation](docs/README.md) for requirements, architecture, interfaces, quality,
+delivery, and operations. [Contributing](CONTRIBUTING.md) describes the review and branch workflow.
 
 ## Release scope
 
-Version 0.1.0 covers local human-versus-AI play, reusable domain APIs, private match recording, and
-external AI processes. GUI, network matchmaking, accounts, and a production database adapter are
-outside this release.
+The 0.1 series covers local human-versus-AI play, reusable domain and application APIs, external AI
+processes, private match recording, deterministic arenas, and descriptive analysis. GUI, network
+matchmaking, accounts, production database adapters, and package-registry publication are outside
+this scope.
 
 This is an unofficial implementation. It does not include commercial artwork or rulebook text.
 
 ## License
 
-Licensed under the [MIT License](https://github.com/satter0827/pyghostboard/blob/main/LICENSE).
+Licensed under the [MIT License](LICENSE).

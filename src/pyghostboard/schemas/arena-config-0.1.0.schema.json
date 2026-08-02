@@ -1,0 +1,375 @@
+{
+  "$defs": {
+    "ArenaExecutionLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "agent_max_message_bytes": {
+          "default": 1048576,
+          "minimum": 1024,
+          "title": "Agent Max Message Bytes",
+          "type": "integer"
+        },
+        "agent_max_stderr_bytes": {
+          "default": 65536,
+          "minimum": 0,
+          "title": "Agent Max Stderr Bytes",
+          "type": "integer"
+        },
+        "agent_timeout": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Agent Timeout",
+          "type": "number"
+        },
+        "max_plies": {
+          "default": 1000,
+          "minimum": 1,
+          "title": "Max Plies",
+          "type": "integer"
+        }
+      },
+      "title": "ArenaExecutionLimits",
+      "type": "object"
+    },
+    "Exit": {
+      "additionalProperties": false,
+      "properties": {
+        "square": {
+          "$ref": "#/$defs/Square"
+        }
+      },
+      "required": [
+        "square"
+      ],
+      "title": "Exit",
+      "type": "object"
+    },
+    "ExternalArenaAgent": {
+      "additionalProperties": false,
+      "description": "A shell-free external policy identified by declared provenance.",
+      "properties": {
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Command",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "external",
+          "default": "external",
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision": {
+          "minLength": 1,
+          "title": "Revision",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "command",
+        "revision"
+      ],
+      "title": "ExternalArenaAgent",
+      "type": "object"
+    },
+    "MctsArenaAgent": {
+      "additionalProperties": false,
+      "description": "A bundled MCTS policy with experiment-specific search settings.",
+      "properties": {
+        "exploration_weight": {
+          "default": 1.4142135623730951,
+          "minimum": 0,
+          "title": "Exploration Weight",
+          "type": "number"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "iterations": {
+          "default": 256,
+          "minimum": 1,
+          "title": "Iterations",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "mcts",
+          "default": "mcts",
+          "title": "Kind",
+          "type": "string"
+        },
+        "rollout_plies": {
+          "default": 96,
+          "minimum": 1,
+          "title": "Rollout Plies",
+          "type": "integer"
+        },
+        "setup_candidate_limit": {
+          "default": 256,
+          "minimum": 1,
+          "title": "Setup Candidate Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "MctsArenaAgent",
+      "type": "object"
+    },
+    "OutcomeReason": {
+      "enum": [
+        "escape",
+        "capture_good",
+        "sacrifice_bad"
+      ],
+      "title": "OutcomeReason",
+      "type": "string"
+    },
+    "RandomArenaAgent": {
+      "additionalProperties": false,
+      "description": "A reproducible bundled random policy.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "random",
+          "default": "random",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "RandomArenaAgent",
+      "type": "object"
+    },
+    "RuleSet": {
+      "additionalProperties": false,
+      "properties": {
+        "bad_count": {
+          "minimum": 1,
+          "title": "Bad Count",
+          "type": "integer"
+        },
+        "format_version": {
+          "const": "0.1.0",
+          "default": "0.1.0",
+          "title": "Format Version",
+          "type": "string"
+        },
+        "good_count": {
+          "minimum": 1,
+          "title": "Good Count",
+          "type": "integer"
+        },
+        "height": {
+          "maximum": 26,
+          "minimum": 2,
+          "title": "Height",
+          "type": "integer"
+        },
+        "movement": {
+          "items": {
+            "$ref": "#/$defs/Vector"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "title": "Movement",
+          "type": "array"
+        },
+        "player_one_exits": {
+          "items": {
+            "$ref": "#/$defs/Exit"
+          },
+          "title": "Player One Exits",
+          "type": "array"
+        },
+        "player_one_start": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Player One Start",
+          "type": "array"
+        },
+        "player_two_exits": {
+          "items": {
+            "$ref": "#/$defs/Exit"
+          },
+          "title": "Player Two Exits",
+          "type": "array"
+        },
+        "player_two_start": {
+          "items": {
+            "$ref": "#/$defs/Square"
+          },
+          "title": "Player Two Start",
+          "type": "array"
+        },
+        "victory_conditions": {
+          "default": [
+            "escape",
+            "capture_good",
+            "sacrifice_bad"
+          ],
+          "items": {
+            "$ref": "#/$defs/OutcomeReason"
+          },
+          "title": "Victory Conditions",
+          "type": "array"
+        },
+        "width": {
+          "maximum": 26,
+          "minimum": 2,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "good_count",
+        "bad_count",
+        "player_one_start",
+        "player_two_start",
+        "player_one_exits",
+        "player_two_exits",
+        "movement"
+      ],
+      "title": "RuleSet",
+      "type": "object"
+    },
+    "Square": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "exclusiveMaximum": 26,
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Square",
+      "type": "object"
+    },
+    "Vector": {
+      "additionalProperties": false,
+      "properties": {
+        "dx": {
+          "title": "Dx",
+          "type": "integer"
+        },
+        "dy": {
+          "title": "Dy",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dx",
+        "dy"
+      ],
+      "title": "Vector",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-config-0.1.0.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Complete reproducible inputs for one multi-agent arena run.",
+  "properties": {
+    "agents": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "external": "#/$defs/ExternalArenaAgent",
+            "mcts": "#/$defs/MctsArenaAgent",
+            "random": "#/$defs/RandomArenaAgent"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/RandomArenaAgent"
+          },
+          {
+            "$ref": "#/$defs/MctsArenaAgent"
+          },
+          {
+            "$ref": "#/$defs/ExternalArenaAgent"
+          }
+        ]
+      },
+      "minItems": 2,
+      "title": "Agents",
+      "type": "array"
+    },
+    "format_version": {
+      "const": "0.1.0",
+      "default": "0.1.0",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/ArenaExecutionLimits",
+      "default": {
+        "agent_max_message_bytes": 1048576,
+        "agent_max_stderr_bytes": 65536,
+        "agent_timeout": 10.0,
+        "max_plies": 1000
+      }
+    },
+    "recording": {
+      "default": "all",
+      "enum": [
+        "all",
+        "none"
+      ],
+      "title": "Recording",
+      "type": "string"
+    },
+    "root_seed": {
+      "title": "Root Seed",
+      "type": "integer"
+    },
+    "rounds": {
+      "minimum": 1,
+      "title": "Rounds",
+      "type": "integer"
+    },
+    "rules": {
+      "$ref": "#/$defs/RuleSet"
+    }
+  },
+  "required": [
+    "rounds",
+    "root_seed",
+    "agents",
+    "rules"
+  ],
+  "title": "ArenaConfig",
+  "type": "object"
+}

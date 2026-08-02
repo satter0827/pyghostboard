@@ -6,22 +6,18 @@ __pycache__/
 build/
 dist/
 
-# Test and quality tools
-.coverage
-htmlcov/
-.mypy_cache/
-.pytest_cache/
-.ruff_cache/
+# Local development state
+.pyghostboard/
 
 # Editors and operating systems
 .DS_Store
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
 
 # Local configuration
 .env
 .env.*
-
-# Codex workspace artifacts
-work/
-outputs/

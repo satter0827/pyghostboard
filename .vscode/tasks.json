@@ -1,0 +1,127 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Environment: Sync",
+      "type": "process",
+      "command": "uv",
+      "args": ["sync", "--locked", "--group", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Code: Format",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "ruff", "format", "."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check: Fast",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Check: Format",
+        "Check: Lint",
+        "Check: Types",
+        "Check: Imports",
+        "Check: Structure",
+        "Check: Unit"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: All",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "pytest"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check: Format",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "ruff", "format", "--check", "."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    },
+    {
+      "label": "Check: Lint",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "ruff", "check", "."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    },
+    {
+      "label": "Check: Types",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "mypy"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    },
+    {
+      "label": "Check: Imports",
+      "type": "process",
+      "command": "uv",
+      "args": [
+        "run",
+        "lint-imports",
+        "--cache-dir",
+        ".pyghostboard/cache/import-linter"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    },
+    {
+      "label": "Check: Structure",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "pytest", "tests/structure"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    },
+    {
+      "label": "Check: Unit",
+      "type": "process",
+      "command": "uv",
+      "args": ["run", "pytest", "tests/unit"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "hide": true
+    }
+  ]
+}

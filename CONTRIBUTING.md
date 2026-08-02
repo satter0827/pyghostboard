@@ -1,13 +1,33 @@
 # Contributing
 
 Thank you for contributing to pyghostboard. Keep each pull request focused on one cause and
-consistent with the dependency boundaries in [Architecture](docs/architecture.md).
+consistent with the released [design](docs/design/README.md).
 
 ## Setup
 
 ```shell
 uv sync --locked --group dev
 ```
+
+### Visual Studio Code
+
+Install the workspace's recommended extensions and open the repository root. Press F5 and select
+`App: Play` to synchronize the locked development environment and start an interactive match in
+the integrated terminal. `Arena: Watch Example` displays one configured AI pairing, `Arena: Run
+Example` prompts for a new private output directory, and `Arena: Resume` continues an interrupted
+directory. Select `Tests: Current File` to debug the open test file.
+
+Use **Tasks: Run Task** for the shared workflows:
+
+- `Environment: Sync` installs the locked development dependencies.
+- `Code: Format` formats Python files with Ruff.
+- `Check: Fast` runs formatting, lint, type, import-boundary, structure, and unit checks.
+- `Test: All` runs the complete test suite.
+
+The workspace uses `.venv` and enables pytest discovery, Ruff formatting, and Ruff fixes for Python
+files. Development-tool caches and coverage data stay under `.pyghostboard`; deleting that
+directory resets local generated state without removing the virtual environment. These settings do
+not change non-Python files on save.
 
 ## Branches and worktrees
 
@@ -39,40 +59,36 @@ through GitHub; automated agents do not merge pull requests to `main`. Do not me
 `develop` after a release. Main pull-request checks validate GitHub's test merge against the current
 main revision.
 
-After main push CI succeeds, a maintainer may tag that exact commit with `vX.Y.Z`. The tag workflow
-builds and verifies wheel and source archives and retains them as Actions artifacts. This repository
-does not publish distributions to PyPI, TestPyPI, or another package registry.
+After the main Release Gate succeeds, a maintainer starts the Release Artifact workflow on `main`
+with an `X.Y.Z` version. The workflow verifies and stores wheel and source archives before creating
+the matching tag on the same commit. This repository does not publish distributions to PyPI,
+TestPyPI, or another package registry.
 
 ## Verification
 
 Run the fast checks while implementing:
 
 ```shell
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy
-uv run lint-imports
-uv run pytest tests/structure
-uv run pytest tests/unit
+uv run python scripts/release_gate.py check quality
+uv run python scripts/release_gate.py check unit
 ```
 
 Before opening a pull request, run the complete local checks:
 
 ```shell
-uv run coverage erase
-uv run coverage run -m pytest tests/unit
-uv run coverage run --append -m pytest tests/integration
-uv run coverage report
-uv build
-uv run twine check dist/*
-uv audit --locked --preview-features audit-command
+uv run python scripts/release_gate.py check all
 ```
 
 `uv audit` contacts the configured vulnerability service. A network failure is an environment
 failure, not evidence that dependencies are safe.
 
 Run `uv run python tools/generate_schemas.py` after changing a public JSON model and include the
-generated schema changes in the same pull request.
+generated schema changes in the same pull request. The quality gate checks them without modifying
+the working tree.
+
+Codex and human reviewers follow [`scripts/review_gate.md`](scripts/review_gate.md). Resolve valid
+findings after correcting them and resolve false positives only after confirming why the reported
+failure cannot occur.
 
 ## Test boundaries
 
@@ -89,6 +105,6 @@ behavior requires them.
 ## Pull requests
 
 Use a Conventional Commit prefix in the title, such as `feat:`, `fix:`, `refactor:`, `test:`,
-`docs:`, or `chore:`. Describe the cause, the ownership boundary changed, what remains outside the
-change, and the exact validation performed. Update architecture documentation in the same pull
-request when a dependency boundary changes.
+`docs:`, or `chore:`. Describe the cause, affected requirements and design, what remains outside
+the change, automated evidence, human decisions, manual procedures, and the exact validation
+performed. Update the design in the same pull request when an implemented contract changes.
