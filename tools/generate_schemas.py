@@ -11,9 +11,10 @@ from pydantic import TypeAdapter
 from pyghostboard.adapters.recording import RECORD_FORMAT_VERSION, RecordLine
 from pyghostboard.application.arena import (
     ARENA_FORMAT_VERSION,
-    ArenaAnalysis,
+    ArenaConfig,
     ArenaManifest,
     ArenaMatchResult,
+    ArenaReport,
 )
 from pyghostboard.domain import (
     RULES_FORMAT_VERSION,
@@ -55,6 +56,10 @@ def generate_schemas() -> dict[str, str]:
             PROTOCOL_VERSION,
             TypeAdapter(AgentResponse).json_schema(),
         ),
+        f"arena-config-{ARENA_FORMAT_VERSION}.schema.json": (
+            ARENA_FORMAT_VERSION,
+            ArenaConfig.model_json_schema(),
+        ),
         f"arena-manifest-{ARENA_FORMAT_VERSION}.schema.json": (
             ARENA_FORMAT_VERSION,
             ArenaManifest.model_json_schema(),
@@ -65,7 +70,7 @@ def generate_schemas() -> dict[str, str]:
         ),
         f"arena-analysis-{ARENA_FORMAT_VERSION}.schema.json": (
             ARENA_FORMAT_VERSION,
-            ArenaAnalysis.model_json_schema(),
+            ArenaReport.model_json_schema(),
         ),
     }
     documents: dict[str, str] = {}

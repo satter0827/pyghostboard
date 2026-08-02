@@ -91,20 +91,23 @@ AI wire schema 0.1.0にprivate snapshot、private event、相手の生存駒種�
 
 ## 分析する
 
-[`examples/arena.toml`](examples/arena.toml)には2つのAI、round数、root seed、ルール、探索設定、
-実行上限、観戦視点を明記しています。
+[`examples/arena.toml`](examples/arena.toml)には2つ以上のAI、AI別の探索設定、対戦組ごとのround数、
+root seed、ルール、記録方針、実行上限を明記しています。
 
 ```shell
-pyghostboard watch examples/arena.toml
-pyghostboard arena examples/arena.toml --output results/
-pyghostboard analyze results/
-pyghostboard analyze results/ --format json
+pyghostboard arena watch examples/arena.toml --agent mcts --opponent random
+pyghostboard arena run examples/arena.toml --output results/
+pyghostboard arena analyze results/
+pyghostboard arena analyze results/ --format json
+# 中断後
+pyghostboard arena resume results/
 ```
 
-各roundでは2つのAIの先後を入れ替えます。seedはroot seed、round、AI識別子からSHA-256で
-導出します。権限`0700`の非公開result directoryには、成功した各対局の既存形式の非公開記録と、
-versioned manifest・resultを保存します。分析は完了・失敗数、AI別・先後別勝率、勝因、平均手数を
-返します。これは記述統計であり、統計的有意性は主張しません。
+設定した全AIの組合せについて、各roundで先後を入れ替えた2局を行います。seedはroot seed、
+対戦組、round、AI識別子からSHA-256で導出します。権限`0700`の非公開result directoryには、
+1局ごとのattempt directoryを原子的に保存し、中断後は未実行分だけを再開します。分析はrun、
+AI、先後、対戦組、paired round、勝因、失敗code、手数の集計を返し、command、local path、
+process詳細、非公開記録は含めません。これは記述統計であり、順位や統計的有意性は主張しません。
 
 ## 開発
 

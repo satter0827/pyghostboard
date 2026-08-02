@@ -21,7 +21,7 @@
   "$id": "https://raw.githubusercontent.com/satter0827/pyghostboard/v0.1.0/src/pyghostboard/schemas/arena-result-0.1.0.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "One append-only completed or failed arena attempt.",
+  "description": "Private stored result for one completed or failed attempt.",
   "properties": {
     "error_code": {
       "anyOf": [
@@ -69,6 +69,11 @@
       "title": "Match Index",
       "type": "integer"
     },
+    "pair_index": {
+      "minimum": 1,
+      "title": "Pair Index",
+      "type": "integer"
+    },
     "player_one_agent": {
       "title": "Player One Agent",
       "type": "string"
@@ -114,6 +119,7 @@
     "record": {
       "anyOf": [
         {
+          "const": "match.jsonl",
           "type": "string"
         },
         {
@@ -162,6 +168,7 @@
   },
   "required": [
     "match_index",
+    "pair_index",
     "round_index",
     "game_index",
     "match_id",

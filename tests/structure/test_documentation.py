@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -72,3 +73,19 @@ def test_temporary_notes_use_dated_names() -> None:
         if path.name != "README.md" and NOTE_NAME.fullmatch(path.name) is None
     ]
     assert invalid == []
+
+
+def test_vscode_launches_supported_cli_workflows_in_an_integrated_terminal() -> None:
+    document = json.loads((ROOT / ".vscode" / "launch.json").read_text(encoding="utf-8"))
+    configurations = {item["name"]: item for item in document["configurations"]}
+    expected_prefixes = {
+        "App: Play": ["play"],
+        "Arena: Watch Example": ["arena", "watch"],
+        "Arena: Run Example": ["arena", "run"],
+        "Arena: Resume": ["arena", "resume"],
+    }
+    for name, prefix in expected_prefixes.items():
+        configuration = configurations[name]
+        assert configuration["module"] == "pyghostboard.cli"
+        assert configuration["console"] == "integratedTerminal"
+        assert configuration["args"][: len(prefix)] == prefix

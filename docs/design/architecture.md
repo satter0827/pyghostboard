@@ -69,15 +69,17 @@ implement `PlayerController`.
 
 ## AI experiment execution
 
-The application layer validates the complete `ArenaConfig`, derives per-agent seeds, creates paired
-side-swapped `ArenaMatchPlan` values, and computes descriptive `ArenaAnalysis` values. It performs no
-file or process I/O. The CLI constructs subprocess controllers and uses `MatchRunner` for every
-game; arena rules never fork into a second match engine.
+`ArenaRunner` validates the complete `ArenaConfig`, derives per-pair agent seeds, schedules every
+agent pairing with swapped sides, and runs each game through `MatchRunner`. It depends on injected
+`ArenaControllerFactory` and `ArenaStore` ports and performs no file or process I/O. The CLI
+constructs subprocess controllers and filesystem storage; arena rules never fork into a second
+match engine.
 
-The arena adapter owns a new private directory, atomically replaces `manifest.json`, appends and
-syncs one `ArenaMatchResult` line after each attempt, and reuses `MatchRecorder` destinations for
-complete private games. Unexpected host failure changes the manifest to `interrupted`; an expected
-AI failure becomes one failed result and does not promote a partial match record.
+The arena adapter exclusively locks one private directory and stores its normalized configuration,
+atomic manifest, and one directory per attempt. A successful attempt atomically promotes its result
+and optional private record together. An expected AI failure becomes a durable failed attempt;
+unexpected host failure marks the run interrupted. Resume validates the stored plan and runs only
+indexes with no durable attempt.
 
 ## Persistence
 

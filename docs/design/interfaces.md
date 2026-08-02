@@ -15,10 +15,9 @@ use UTF-8 and reject unknown fields or unsupported format versions.
 The installed `pyghostboard` command provides:
 
 - `play` for a local human-versus-AI match;
-- `watch` for one configured AI match from one player viewpoint;
-- `arena` for a new deterministic private result directory;
+- `arena run`, `arena resume`, and `arena watch` for deterministic private AI experiments;
 - `replay` for reading a private record;
-- `analyze` for descriptive table or JSON output;
+- `arena analyze` for descriptive table or JSON output;
 - `agent check` for a complete external-AI lifecycle;
 - `rules validate` for validating a TOML rule file.
 
@@ -97,15 +96,18 @@ events, records, AI requests, and AI responses. Each Schema has a versioned iden
 unrecognized fields. Schema generation is deterministic and CI rejects an uncommitted generated
 diff.
 
-Arena manifest, match result, and analysis documents use schema version 0.1.0. `manifest.json`
-contains `running`, `completed`, or `interrupted` state and durable counters. `results.jsonl`
-contains one completed or failed attempt per line. Successful `matches/NNNNNN.jsonl` files use the
-existing private record format; complete state is not duplicated in another arena format.
+Arena configuration, manifest, match result, and analysis documents use schema version 0.1.0.
+`config.json` stores the normalized private configuration and provenance; `manifest.json` contains
+`running`, `completed`, or `interrupted` state and reconstructable counters. Each
+`attempts/NNNNNN/` directory contains `result.json` and, when enabled for a successful game, the
+existing private `match.jsonl` record.
 
-An arena TOML document declares exactly two uniquely identified agents, a watch agent, rounds, root
-seed, a complete `RuleSet`, MCTS search settings, and process and match limits. Each round schedules
-two games with the agents swapped between player one and player two. An agent seed is the unsigned
-64-bit prefix of SHA-256 over root seed, round, and agent identifier.
+An arena TOML document declares two or more uniquely identified random, MCTS, or external agents,
+rounds per pairing, root seed, recording policy, a complete `RuleSet`, and execution limits. MCTS
+settings belong to that agent; an external agent declares a shell-free command and revision.
+Pairings use sorted identifiers, swap sides once per round, and derive unsigned 64-bit seeds with
+SHA-256 over root seed, pairing, round, and agent identifier. Watch viewpoint, opponent, round, and
+side are command arguments rather than experiment settings.
 
 ## Records and logs
 

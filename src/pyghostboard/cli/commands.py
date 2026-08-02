@@ -23,7 +23,7 @@ from pyghostboard.adapters.ai import SubprocessAgentController
 from pyghostboard.adapters.arena import load_arena_config
 from pyghostboard.adapters.config import RuntimeSettings
 from pyghostboard.adapters.recording import MatchRecorder, read_record
-from pyghostboard.application.arena import ArenaAnalysis
+from pyghostboard.application.arena import ArenaReport
 from pyghostboard.application.runner import MatchResult, MatchRunner, MatchSpec, PlayerContext
 from pyghostboard.application.service import (
     InMemoryMatchStore,
@@ -34,7 +34,8 @@ from pyghostboard.application.service import (
 from pyghostboard.cli.arena import (
     analyze_directory,
     check_external_agent,
-    run_arena,
+    resume_arena,
+    run_new_arena,
     watch_match,
 )
 from pyghostboard.cli.config import resolve_agent_command, resolve_rules
@@ -112,8 +113,15 @@ def create_app(language: str, *, console: Console | None = None) -> typer.Typer:
         add_completion=False,
         cls=LocalizedGroup,
     )
+    arena_app = typer.Typer(
+        help=tr("Run, resume, watch, and analyze AI experiments."),
+        no_args_is_help=True,
+        add_completion=False,
+        cls=LocalizedGroup,
+    )
     app.add_typer(rules_app, name="rules")
     app.add_typer(agent_app, name="agent")
+    app.add_typer(arena_app, name="arena")
 
     @app.callback()
     def root(
@@ -220,13 +228,70 @@ def create_app(language: str, *, console: Console | None = None) -> typer.Typer:
         except (OSError, ValueError) as error:
             raise typer.BadParameter(str(error)) from error
 
-    @app.command(help=tr("Watch one AI match from one configured viewpoint."), cls=LocalizedCommand)
-    def watch(
+    @arena_app.command("run", help=tr("Run a new deterministic AI arena."), cls=LocalizedCommand)
+    def arena_run(
         config: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+        output_directory: Annotated[
+            Path,
+            typer.Option("--output", help=tr("New private result directory.")),
+        ],
     ) -> None:
         try:
             require_posix("command-line interface")
-            asyncio.run(watch_match(load_arena_config(config), output))
+            report = asyncio.run(run_new_arena(load_arena_config(config), output_directory))
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+        output.print(
+            tr("Arena completed: {completed} completed, {failed} failed").format(
+                completed=report.completed_matches,
+                failed=report.failed_matches,
+            )
+        )
+
+    @arena_app.command(
+        "resume", help=tr("Resume the missing attempts in an arena."), cls=LocalizedCommand
+    )
+    def arena_resume(
+        results: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
+    ) -> None:
+        try:
+            require_posix("command-line interface")
+            report = asyncio.run(resume_arena(results))
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error)) from error
+        output.print(
+            tr("Arena completed: {completed} completed, {failed} failed").format(
+                completed=report.completed_matches,
+                failed=report.failed_matches,
+            )
+        )
+
+    @arena_app.command("watch", help=tr("Watch one configured AI pairing."), cls=LocalizedCommand)
+    def arena_watch(
+        config: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+        agent_id: Annotated[str, typer.Option("--agent", help=tr("Agent viewpoint."))],
+        opponent_id: Annotated[str, typer.Option("--opponent", help=tr("Opponent agent."))],
+        round_index: Annotated[
+            int,
+            typer.Option("--round", min=1, help=tr("Configured round to watch.")),
+        ] = 1,
+        side: Annotated[
+            Player,
+            typer.Option(help=tr("Player side assigned to the watched agent.")),
+        ] = Player.ONE,
+    ) -> None:
+        try:
+            require_posix("command-line interface")
+            asyncio.run(
+                watch_match(
+                    load_arena_config(config),
+                    output,
+                    agent_id=agent_id,
+                    opponent_id=opponent_id,
+                    round_index=round_index,
+                    side=side,
+                )
+            )
         except MatchAborted as error:
             output.print(
                 tr("Match aborted ({reason}): {detail}").format(
@@ -237,28 +302,10 @@ def create_app(language: str, *, console: Console | None = None) -> typer.Typer:
         except (OSError, ValueError) as error:
             raise typer.BadParameter(str(error)) from error
 
-    @app.command(help=tr("Run a deterministic AI arena."), cls=LocalizedCommand)
-    def arena(
-        config: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
-        output_directory: Annotated[
-            Path,
-            typer.Option("--output", help=tr("New private result directory.")),
-        ],
-    ) -> None:
-        try:
-            require_posix("command-line interface")
-            manifest = asyncio.run(run_arena(load_arena_config(config), output_directory))
-        except (OSError, ValueError) as error:
-            raise typer.BadParameter(str(error)) from error
-        output.print(
-            tr("Arena completed: {completed} completed, {failed} failed").format(
-                completed=manifest.completed_matches,
-                failed=manifest.failed_matches,
-            )
-        )
-
-    @app.command(help=tr("Analyze descriptive arena results."), cls=LocalizedCommand)
-    def analyze(
+    @arena_app.command(
+        "analyze", help=tr("Analyze descriptive arena results."), cls=LocalizedCommand
+    )
+    def arena_analyze(
         results: Annotated[Path, typer.Argument(exists=True, file_okay=False)],
         output_format: Annotated[
             AnalysisFormat,
@@ -446,12 +493,13 @@ def render_result(console: Console, result: MatchResult) -> None:
     )
 
 
-def _render_analysis(console: Console, analysis: ArenaAnalysis) -> None:
+def _render_analysis(console: Console, analysis: ArenaReport) -> None:
     summary = Table(title=tr("Arena summary"))
     summary.add_column(tr("Metric"))
     summary.add_column(tr("Value"), justify="right")
     summary.add_row(tr("Completed"), str(analysis.completed_matches))
     summary.add_row(tr("Failed"), str(analysis.failed_matches))
+    summary.add_row(tr("Incomplete paired rounds"), str(analysis.incomplete_rounds))
     summary.add_row(tr("Player one win rate"), f"{analysis.player_one_win_rate:.1%}")
     summary.add_row(tr("Player two win rate"), f"{analysis.player_two_win_rate:.1%}")
     summary.add_row(
@@ -466,22 +514,46 @@ def _render_analysis(console: Console, analysis: ArenaAnalysis) -> None:
     agents.add_column(tr("Win rate"), justify="right")
     agents.add_column(tr("As player one"), justify="right")
     agents.add_column(tr("As player two"), justify="right")
-    for row in analysis.agents:
+    for agent_row in analysis.agents:
         agents.add_row(
-            row.agent_id,
-            str(row.games),
-            str(row.wins),
-            f"{row.win_rate:.1%}",
-            f"{row.player_one_win_rate:.1%}",
-            f"{row.player_two_win_rate:.1%}",
+            agent_row.agent_id,
+            str(agent_row.games),
+            str(agent_row.wins),
+            f"{agent_row.win_rate:.1%}",
+            f"{agent_row.player_one_win_rate:.1%}",
+            f"{agent_row.player_two_win_rate:.1%}",
         )
     console.print(agents)
+    pairs = Table(title=tr("Pair results"))
+    pairs.add_column(tr("Pair"))
+    pairs.add_column(tr("Games"), justify="right")
+    pairs.add_column(tr("Wins"), justify="right")
+    pairs.add_column(tr("First sweeps"), justify="right")
+    pairs.add_column(tr("Splits"), justify="right")
+    pairs.add_column(tr("Second sweeps"), justify="right")
+    for pair_row in analysis.pairs:
+        pairs.add_row(
+            f"{pair_row.first_agent} / {pair_row.second_agent}",
+            str(pair_row.completed_games),
+            f"{pair_row.first_wins} / {pair_row.second_wins}",
+            str(pair_row.first_sweeps),
+            str(pair_row.split_rounds),
+            str(pair_row.second_sweeps),
+        )
+    console.print(pairs)
     reasons = Table(title=tr("Victory reasons"))
     reasons.add_column(tr("Reason"))
     reasons.add_column(tr("Count"), justify="right")
     for reason, count in analysis.victory_reasons.items():
         reasons.add_row(reason.value, str(count))
     console.print(reasons)
+    if analysis.error_codes:
+        errors = Table(title=tr("Failure reasons"))
+        errors.add_column(tr("Error code"))
+        errors.add_column(tr("Count"), justify="right")
+        for code, count in analysis.error_codes.items():
+            errors.add_row(code, str(count))
+        console.print(errors)
 
 
 def _configure_logging(level: str) -> None:

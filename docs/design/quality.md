@@ -64,11 +64,12 @@ Public names, error wording, external-store atomicity, deployed branch protectio
 approval require human review because repository tests cannot establish usability or external
 configuration.
 
-Arena tests verify side swapping, SHA-256 seed derivation, complete and failed subprocess games,
-incremental counters, atomic manifest state, interruption, private modes, non-overwrite behavior,
-all three arena Schemas, language-independent JSON, and installed command help. Analysis assertions
-cover counts, rates, reasons, and average plies only; no significance test or confidence claim is
-implemented.
+Arena tests verify multi-agent pairing, side swapping, SHA-256 seed derivation, complete and failed
+subprocess games, attempt-directory promotion, reconstructable manifest state, exclusive locking,
+interruption and resume, private modes, non-overwrite behavior, all four arena Schemas,
+language-independent JSON, and installed command help. Analysis assertions cover agent, side,
+pairing, paired-round, reason, failure, and ply descriptions only; no ranking, significance test, or
+confidence claim is implemented.
 
 The analytical scope and finding format are defined in [`scripts/review_gate.md`](../../scripts/review_gate.md).
 Codex performs the initial analysis, and a human resolves its findings and decides whether to

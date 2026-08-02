@@ -253,9 +253,6 @@ msgstr "プレイヤー2勝率"
 msgid "Reason"
 msgstr "勝因"
 
-msgid "Run a deterministic AI arena."
-msgstr "再現可能なAIアリーナを実行します。"
-
 msgid "Validate an external AI through one full match."
 msgstr "外部AIを1対局の全工程で検証します。"
 
@@ -268,9 +265,6 @@ msgstr "値"
 msgid "Victory reasons"
 msgstr "勝因別結果"
 
-msgid "Watch one AI match from one configured viewpoint."
-msgstr "設定した視点からAI対局を1局観戦します。"
-
 msgid "Win rate"
 msgstr "勝率"
 
@@ -279,3 +273,51 @@ msgstr "勝数"
 
 msgid "at least one --command argument is required"
 msgstr "--commandを1つ以上指定してください"
+
+msgid "Agent viewpoint."
+msgstr "観戦するAIを指定します。"
+
+msgid "Configured round to watch."
+msgstr "観戦するroundを指定します。"
+
+msgid "Error code"
+msgstr "エラーコード"
+
+msgid "Failure reasons"
+msgstr "失敗理由"
+
+msgid "First sweeps"
+msgstr "先のAIの2勝"
+
+msgid "Incomplete paired rounds"
+msgstr "未完了の先後交代round"
+
+msgid "Opponent agent."
+msgstr "対戦相手のAIを指定します。"
+
+msgid "Pair"
+msgstr "対戦組"
+
+msgid "Pair results"
+msgstr "対戦組別結果"
+
+msgid "Player side assigned to the watched agent."
+msgstr "観戦するAIへ割り当てる先後を指定します。"
+
+msgid "Resume the missing attempts in an arena."
+msgstr "アリーナの未実行対局を再開します。"
+
+msgid "Run a new deterministic AI arena."
+msgstr "新しい再現可能なAIアリーナを実行します。"
+
+msgid "Run, resume, watch, and analyze AI experiments."
+msgstr "AI実験を実行、再開、観戦、分析します。"
+
+msgid "Second sweeps"
+msgstr "後のAIの2勝"
+
+msgid "Splits"
+msgstr "1勝1敗"
+
+msgid "Watch one configured AI pairing."
+msgstr "設定したAIの対戦組を1局観戦します。"

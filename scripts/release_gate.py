@@ -215,10 +215,12 @@ def smoke_test_wheel(
     for arguments in (
         ["--help"],
         ["play", "--help"],
-        ["watch", "--help"],
         ["arena", "--help"],
+        ["arena", "run", "--help"],
+        ["arena", "resume", "--help"],
+        ["arena", "watch", "--help"],
+        ["arena", "analyze", "--help"],
         ["replay", "--help"],
-        ["analyze", "--help"],
         ["agent", "check", "--help"],
         ["rules", "validate", "--help"],
     ):

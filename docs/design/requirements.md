@@ -35,12 +35,13 @@ integrating an external process, and local players using the CUI.
   distribution and source provenance without silently replacing an existing destination.
 - **FR-009 — Public formats:** Consumers can validate rules, snapshots, events, records, and AI
   messages against bundled versioned JSON Schemas.
-- **FR-010 — AI experiments:** A TOML configuration runs paired side-swapped AI matches from
-  deterministically derived seeds, watches one configured player view, validates one external AI
-  through a complete match, and saves each arena attempt incrementally.
-- **FR-011 — Descriptive analysis:** A completed or interrupted arena directory reports completed
-  and failed attempts, AI and side win rates, victory reasons, and average plies as a table or
-  versioned JSON without claiming statistical significance.
+- **FR-010 — AI experiments:** A TOML configuration runs every pair of two or more uniquely
+  identified AIs with swapped sides and deterministically derived seeds, watches an explicitly
+  selected pairing, validates one external AI through a complete match, saves each attempt
+  atomically, and resumes only missing attempts after interruption.
+- **FR-011 — Descriptive analysis:** A completed or interrupted arena directory reports run,
+  agent, side, pairing, paired-round, victory-reason, failure-code, and ply summaries as a table or
+  versioned JSON without exposing private execution details or claiming statistical significance.
 
 ## Quality requirements
 
@@ -64,9 +65,10 @@ integrating an external process, and local players using the CUI.
 - **QR-008 — Verifiable change:** Formatting, linting, strict typing, dependency direction, tests,
   Schema and translation generation, packaging, compatibility, and dependency auditing gate
   integration.
-- **QR-009 — Private experiment output:** A new arena output directory uses mode `0700`; result,
-  manifest, and match files use mode `0600`. Existing output is never overwritten, each result is
-  durable before the next match, and interruption is visible in the manifest.
+- **QR-009 — Private experiment output:** A new arena output directory and each attempt directory
+  use mode `0700`; configuration, manifest, lock, result, and match files use mode `0600`. Existing
+  output is never overwritten, each attempt is atomically durable before the next match, concurrent
+  writers are rejected, and an interrupted run can resume only its missing attempts.
 
 ## Release scope
 

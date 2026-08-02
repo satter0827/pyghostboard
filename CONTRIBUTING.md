@@ -13,7 +13,9 @@ uv sync --locked --group dev
 
 Install the workspace's recommended extensions and open the repository root. Press F5 and select
 `App: Play` to synchronize the locked development environment and start an interactive match in
-the integrated terminal. Select `Tests: Current File` to debug the open test file.
+the integrated terminal. `Arena: Watch Example` displays one configured AI pairing, `Arena: Run
+Example` prompts for a new private output directory, and `Arena: Resume` continues an interrupted
+directory. Select `Tests: Current File` to debug the open test file.
 
 Use **Tasks: Run Task** for the shared workflows:
 
