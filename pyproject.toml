@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
     "pydantic>=2.12,<3",
     "pydantic-settings>=2.11,<3",
-    "rich>=14.1,<15",
+    "rich>=15.0.0,<16",
     "structlog>=25.4,<27",
     "typer>=0.20,<1",
 ]
